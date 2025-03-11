@@ -1,0 +1,148 @@
+/* 扑克牌样式 */
+.poker-card {
+  width: 70px;
+  height: 100px;
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Arial', sans-serif;
+  user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.poker-card:hover {
+  transform: translateY(-5px);
+}
+
+/* 牌背面 */
+.card-back {
+  background-color: #1e3a8a;
+  background-image: repeating-linear-gradient(
+    45deg,
+    #1e3a8a,
+    #1e3a8a 10px,
+    #2563eb 10px,
+    #2563eb 20px
+  );
+}
+
+/* 空牌 */
+.card-empty {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  box-shadow: none;
+}
+
+/* 无效牌 */
+.card-invalid {
+  background-color: #f87171;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+}
+
+/* 牌面值和花色 */
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.card-top-left {
+  top: 5px;
+  left: 5px;
+}
+
+.card-bottom-right {
+  bottom: 5px;
+  right: 5px;
+  transform: rotate(180deg);
+}
+
+.card-rank {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.card-suit {
+  font-size: 14px;
+}
+
+/* 中心花色 */
+.card-center {
+  font-size: 30px;
+}
+
+/* 红色花色 */
+.card-red {
+  color: #dc2626;
+}
+
+/* 黑色花色 */
+.card-black {
+  color: #000000;
+}
+
+/* 小尺寸牌 */
+.poker-card.small {
+  width: 50px;
+  height: 70px;
+}
+
+.poker-card.small .card-rank {
+  font-size: 12px;
+}
+
+.poker-card.small .card-suit {
+  font-size: 10px;
+}
+
+.poker-card.small .card-center {
+  font-size: 20px;
+}
+
+/* 大尺寸牌 */
+.poker-card.large {
+  width: 90px;
+  height: 130px;
+}
+
+.poker-card.large .card-rank {
+  font-size: 20px;
+}
+
+.poker-card.large .card-suit {
+  font-size: 18px;
+}
+
+.poker-card.large .card-center {
+  font-size: 40px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .poker-card {
+    width: 50px;
+    height: 70px;
+  }
+  
+  .poker-card .card-rank {
+    font-size: 12px;
+  }
+  
+  .poker-card .card-suit {
+    font-size: 10px;
+  }
+  
+  .poker-card .card-center {
+    font-size: 20px;
+  }
+} 

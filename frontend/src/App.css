@@ -1,0 +1,51 @@
+.App {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  flex: 1;
+}
+
+.page-title {
+  margin-bottom: 30px;
+  color: #277714;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.alert {
+  margin-bottom: 20px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.card-title {
+  color: #277714;
+}
+
+.card-subtitle {
+  color: #666;
+}
+
+.badge {
+  margin-right: 5px;
+}
+
+.table-responsive {
+  margin-top: 20px;
+}
+
+.footer {
+  margin-top: 50px;
+  padding: 20px 0;
+  background-color: #f8f9fa;
+  text-align: center;
+  color: #666;
+} 
