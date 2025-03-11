@@ -1,0 +1,41 @@
+# Cursor ignore file
+# Directories to ignore
+node_modules/
+dist/
+build/
+target/
+.git/
+.idea/
+.vscode/
+
+# Build artifacts
+*.min.js
+*.min.css
+*.map
+
+# Large files
+*.log
+*.zip
+*.tar.gz
+*.jar
+*.war
+*.ear
+*.class
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Package files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Maven
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/ 
