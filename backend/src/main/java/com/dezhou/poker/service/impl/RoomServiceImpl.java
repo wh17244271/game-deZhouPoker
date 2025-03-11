@@ -43,7 +43,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
         room.setSmallBlind(smallBlind);
         room.setBigBlind(bigBlind);
         room.setCurrentPlayers(0);
-        room.setStatus("WAITING");
+        room.setStatus(Room.RoomStatus.WAITING.name());
         room.setCreatedAt(LocalDateTime.now());
         room.setUpdatedAt(LocalDateTime.now());
         room.setDeleted(0);
@@ -55,18 +55,18 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
     @Override
     public List<Room> getActiveRooms() {
         return list(new QueryWrapper<Room>()
-            .eq("status", "WAITING")
+            .eq("status", Room.RoomStatus.WAITING.name())
             .or()
-            .eq("status", "PLAYING"));
+            .eq("status", Room.RoomStatus.PLAYING.name()));
     }
 
     @Override
     public IPage<Room> getActiveRoomsPage(int page, int size) {
         return page(new Page<>(page, size),
             new QueryWrapper<Room>()
-                .eq("status", "WAITING")
+                .eq("status", Room.RoomStatus.WAITING.name())
                 .or()
-                .eq("status", "PLAYING"));
+                .eq("status", Room.RoomStatus.PLAYING.name()));
     }
 
     @Override
@@ -78,25 +78,14 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
         }
         return false;
     }
-
-    @Override
     public boolean checkPassword(Long roomId, String password) {
         Room room = getById(roomId);
         if (room == null) {
-            throw new ResourceNotFoundException("Room", "id", roomId);
+            return false;
         }
-        
-        // 如果房间没有密码，直接返回true
         if (!StringUtils.hasText(room.getPassword())) {
             return true;
         }
-        
-        // 如果提供的密码为空，返回false
-        if (!StringUtils.hasText(password)) {
-            return false;
-        }
-        
-        // 比较密码
         return room.getPassword().equals(password);
     }
 
@@ -105,7 +94,7 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
         return roomPlayerMapper.selectList(
             new QueryWrapper<RoomPlayer>()
                 .eq("room_id", roomId)
-                .orderBy(true, true, "position")
+                .orderBy(true, true, "seat_number")
         );
     }
 } 

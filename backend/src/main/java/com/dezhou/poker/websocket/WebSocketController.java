@@ -1,8 +1,8 @@
 package com.dezhou.poker.websocket;
 
-import com.dezhou.poker.model.GameAction;
-import com.dezhou.poker.model.GameHistory;
-import com.dezhou.poker.model.PlayerGameHistory;
+import com.dezhou.poker.entity.GameAction;
+import com.dezhou.poker.entity.GameHistory;
+import com.dezhou.poker.entity.PlayerGameHistory;
 import com.dezhou.poker.security.UserPrincipal;
 import com.dezhou.poker.service.GameService;
 import org.slf4j.Logger;

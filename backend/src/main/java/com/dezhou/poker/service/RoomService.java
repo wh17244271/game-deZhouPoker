@@ -28,7 +28,7 @@ import java.util.List;
  * @since 2023-03-11
  */
 public interface RoomService extends IService<Room> {
-
+    
     /**
      * 创建房间
      *
@@ -39,7 +39,7 @@ public interface RoomService extends IService<Room> {
      * @param maxPlayers 最大玩家数
      * @param smallBlind 小盲注
      * @param bigBlind 大盲注
-     * @return 创建的房间
+     * @return 房间信息
      */
     Room createRoom(String name, String password, Long creatorId, Integer minPlayers, Integer maxPlayers, BigDecimal smallBlind, BigDecimal bigBlind);
 
@@ -51,7 +51,7 @@ public interface RoomService extends IService<Room> {
     List<Room> getActiveRooms();
 
     /**
-     * 分页获取活跃房间
+     * 分页获取活跃房间列表
      *
      * @param page 页码
      * @param size 每页大小
@@ -69,77 +69,19 @@ public interface RoomService extends IService<Room> {
     boolean updateStatus(Long roomId, String status);
 
     /**
-     * 检查房间密码
-     *
-     * @param roomId 房间ID
-     * @param password 密码
-     * @return 是否匹配
-     */
-    boolean checkPassword(Long roomId, String password);
-
-    /**
-     * 获取房间玩家列表
-     *
-     * @param roomId 房间ID
-     * @return 玩家列表
-     */
-    List<RoomPlayer> getRoomPlayers(Long roomId);
-}
-
-@Service
-@Transactional
-public class RoomService extends ServiceImpl<RoomMapper, Room> {
-    
-    @Autowired
-    private RoomPlayerMapper roomPlayerMapper;
-    
-    /**
      * 获取房间玩家列表
      *
      * @param roomId 房间ID
      * @return 房间玩家列表
      */
-    public List<RoomPlayer> getRoomPlayers(Long roomId) {
-        return roomPlayerMapper.selectList(
-            new QueryWrapper<RoomPlayer>()
-                .eq("room_id", roomId)
-                .orderBy(true, true, "position")
-        );
-    }
-    
+    List<RoomPlayer> getRoomPlayers(Long roomId);
+
     /**
-     * 更新房间状态
+     * 检查房间密码
      *
-     * @param roomId 房间ID
-     * @param status 状态
+     * @param roomId   房间ID
+     * @param password 密码
+     * @return 密码是否正确
      */
-    public void updateStatus(Long roomId, String status) {
-        Room room = getById(roomId);
-        if (room != null) {
-            room.setStatus(status);
-            updateById(room);
-        }
-    }
-    
-    /**
-     * 获取房间信息
-     *
-     * @param roomId 房间ID
-     * @return 房间信息
-     */
-    @Override
-    public Room getById(Long roomId) {
-        return super.getById(roomId);
-    }
-    
-    /**
-     * 更新房间信息
-     *
-     * @param room 房间信息
-     * @return 是否成功
-     */
-    @Override
-    public boolean updateById(Room room) {
-        return super.updateById(room);
-    }
+    boolean checkPassword(Long roomId, String password);
 }

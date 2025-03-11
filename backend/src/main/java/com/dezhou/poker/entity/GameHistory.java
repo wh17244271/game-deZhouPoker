@@ -1,9 +1,9 @@
 package com.dezhou.poker.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
@@ -21,6 +21,15 @@ import java.time.LocalDateTime;
 public class GameHistory implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 游戏状态枚举
+     */
+    public enum GameStatus {
+        IN_PROGRESS,    // 进行中
+        FINISHED,       // 已结束
+        CANCELLED       // 已取消
+    }
 
     /**
      * 游戏ID
@@ -68,7 +77,7 @@ public class GameHistory implements Serializable {
      * 当前轮次 (PRE_FLOP, FLOP, TURN, RIVER, SHOWDOWN)
      */
     @TableField("current_round")
-    private String currentRound;
+    private Integer currentRound;
 
     /**
      * 公共牌
@@ -112,6 +121,36 @@ public class GameHistory implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 当前玩家ID
+     */
+    @TableField("current_player_id")
+    private Long currentPlayerId;
+
+    /**
+     * 庄家位置
+     */
+    @TableField("dealer_position")
+    private Integer dealerPosition;
+
+    /**
+     * 小盲注位置
+     */
+    @TableField("small_blind_position")
+    private Integer smallBlindPosition;
+
+    /**
+     * 大盲注位置
+     */
+    @TableField("big_blind_position")
+    private Integer bigBlindPosition;
+
+    /**
+     * 当前下注
+     */
+    @TableField("current_bet")
+    private BigDecimal currentBet;
 
     /**
      * 获取游戏状态枚举

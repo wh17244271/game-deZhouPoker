@@ -1,11 +1,10 @@
 package com.dezhou.poker.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dezhou.poker.exception.ResourceNotFoundException;
 import com.dezhou.poker.entity.*;
-import com.dezhou.poker.entity.Room.RoomStatus;
-import com.dezhou.poker.entity.GameHistory.GameStatus;
-import com.dezhou.poker.entity.RoomPlayer.PlayerStatus;
+
 import com.dezhou.poker.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -53,7 +52,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         Room room = roomService.getById(roomId);
         
         // 检查房间状态
-        if (room.getStatusEnum() == RoomStatus.PLAYING) {
+        if (room.getStatusEnum() == Room.RoomStatus.PLAYING) {
             throw new IllegalStateException("房间已经在游戏中");
         }
         
@@ -66,7 +65,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         GameHistory gameHistory = new GameHistory();
         gameHistory.setRoomId(room.getId());
         gameHistory.setStartTime(LocalDateTime.now());
-        gameHistory.setStatusEnum(GameStatus.IN_PROGRESS);
+        gameHistory.setStatusEnum(GameHistory.GameStatus.IN_PROGRESS);
         save(gameHistory);
         
         // 获取房间玩家
@@ -74,9 +73,9 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         
         // 为每个玩家创建游戏历史记录
         for (RoomPlayer roomPlayer : roomPlayers) {
-            if (roomPlayer.getStatusEnum() == PlayerStatus.WAITING) {
+            if (roomPlayer.getStatusEnum() == RoomPlayer.PlayerStatus.WAITING) {
                 // 更新玩家状态为活跃
-                roomPlayer.setStatusEnum(PlayerStatus.ACTIVE);
+                roomPlayer.setStatusEnum(RoomPlayer.PlayerStatus.PLAYING);
                 
                 // 创建玩家游戏历史记录
                 PlayerGameHistory playerGameHistory = new PlayerGameHistory();
@@ -89,7 +88,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         }
         
         // 更新房间状态
-        room.setStatusEnum(RoomStatus.PLAYING);
+        room.setStatusEnum(Room.RoomStatus.PLAYING);
         roomService.updateById(room);
         
         return gameHistory;
@@ -110,17 +109,17 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         }
         
         // 更新游戏历史记录
-        gameHistory.setStatusEnum(GameStatus.COMPLETED);
+        gameHistory.setStatusEnum(GameHistory.GameStatus.FINISHED);
         gameHistory.setEndTime(LocalDateTime.now());
         gameHistory.setCommunityCards(communityCards);
         
         // 计算奖池大小
         BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
-        gameHistory.setPotSize(potSize);
+        gameHistory.setPot(potSize);
         
         // 更新房间状态
         Room room = roomService.getById(gameHistory.getRoomId());
-        room.setStatusEnum(RoomStatus.WAITING);
+        room.setStatusEnum(Room.RoomStatus.WAITING);
         roomService.updateById(room);
         
         updateById(gameHistory);
@@ -170,8 +169,12 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         User user = userService.getById(userId);
         
         // 检查是否已经投票
-        AllinVoteId voteId = new AllinVoteId(gameId, userId);
-        AllinVote existingVote = allinVoteMapper.selectById(voteId);
+        AllinVote existingVote = allinVoteMapper.selectOne(
+            new QueryWrapper<AllinVote>()
+                .eq("game_id", gameId)
+                .eq("user_id", userId)
+        );
+
         if (existingVote != null) {
             // 更新投票
             existingVote.setVoteOption(voteOption);
@@ -182,9 +185,13 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         
         // 创建新投票
         AllinVote allinVote = new AllinVote();
-        allinVote.setId(voteId);
+        allinVote.setGameId(gameId);
+        allinVote.setUserId(userId);
         allinVote.setVoteOption(voteOption);
         allinVote.setVoteTime(LocalDateTime.now());
+        allinVote.setCreatedAt(LocalDateTime.now());
+        allinVote.setUpdatedAt(LocalDateTime.now());
+        allinVote.setDeleted(0);
         allinVoteMapper.insert(allinVote);
         
         return allinVote;
@@ -250,10 +257,10 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         // 记录筹码变动
         ChipTransaction chipTransaction = new ChipTransaction();
         chipTransaction.setUserId(userId);
-        chipTransaction.setGameId(gameId);
         chipTransaction.setAmount(finalChips);
-        chipTransaction.setTransactionTypeEnum(ChipTransaction.TransactionType.WIN);
-        chipTransaction.setTransactionTime(LocalDateTime.now());
+        chipTransaction.setType("WIN");
+        chipTransaction.setGameId(gameId);
+        chipTransaction.setCreatedAt(LocalDateTime.now());
         chipTransactionMapper.insert(chipTransaction);
         
         return playerGameHistory;

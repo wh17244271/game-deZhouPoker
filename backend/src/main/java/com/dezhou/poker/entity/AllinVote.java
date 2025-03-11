@@ -22,22 +22,16 @@ public class AllinVote implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 复合主键
+     * 游戏ID
      */
-    @TableId(type = IdType.NONE)
-    private AllinVoteId id;
+    @TableField("game_id")
+    private Long gameId;
 
     /**
-     * 游戏
+     * 用户ID
      */
-    @TableField(exist = false)
-    private GameHistory game;
-
-    /**
-     * 用户
-     */
-    @TableField(exist = false)
-    private User user;
+    @TableField("user_id")
+    private Long userId;
 
     /**
      * 投票选项
@@ -69,4 +63,16 @@ public class AllinVote implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 游戏
+     */
+    @TableField(exist = false)
+    private GameHistory game;
+
+    /**
+     * 用户
+     */
+    @TableField(exist = false)
+    private User user;
 } 

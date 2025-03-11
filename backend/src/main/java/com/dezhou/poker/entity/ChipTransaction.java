@@ -23,6 +23,17 @@ public class ChipTransaction implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * 交易类型枚举
+     */
+    public enum TransactionType {
+        WIN,        // 游戏获胜
+        LOSE,       // 游戏失败
+        DEPOSIT,    // 充值
+        WITHDRAW,   // 提现
+        TRANSFER    // 转账
+    }
+
+    /**
      * 交易ID
      */
     @TableId(value = "id", type = IdType.AUTO)
@@ -41,31 +52,37 @@ public class ChipTransaction implements Serializable {
     private Long gameId;
 
     /**
-     * 交易类型
-     */
-    @TableField("transaction_type")
-    private String transactionType;
-
-    /**
-     * 金额
+     * 交易金额
      */
     @TableField("amount")
     private BigDecimal amount;
 
     /**
-     * 交易时间
+     * 交易类型
      */
-    @TableField("transaction_time")
-    private LocalDateTime transactionTime;
+    @TableField("type")
+    private String type;
 
     /**
-     * 创建时间
+     * 交易时间
      */
     @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
-     * 更新时间
+     * 备注
+     */
+    @TableField("remark")
+    private String remark;
+
+    /**
+     * 操作者ID
+     */
+    @TableField("operator_id")
+    private Long operatorId;
+
+    /**
+     * 创建时间
      */
     @TableField("updated_at")
     private LocalDateTime updatedAt;
@@ -90,26 +107,31 @@ public class ChipTransaction implements Serializable {
     private GameHistory game;
 
     /**
-     * 交易类型枚举
-     */
-    public enum TransactionType {
-        WIN,        // 赢得筹码
-        LOSE,       // 输掉筹码
-        RECHARGE,   // 充值
-        WITHDRAW    // 提现
-    }
-
-    /**
      * 获取交易类型枚举
      */
-    public TransactionType getTransactionTypeEnum() {
-        return TransactionType.valueOf(transactionType);
+    public TransactionType getTypeEnum() {
+        return TransactionType.valueOf(type);
     }
 
     /**
      * 设置交易类型枚举
      */
-    public void setTransactionTypeEnum(TransactionType transactionType) {
-        this.transactionType = transactionType.name();
+    public void setTypeEnum(TransactionType type) {
+        this.type = type.name();
+    }
+
+    /**
+     * 设置备注
+     */
+    public ChipTransaction setReason(String reason) {
+        this.remark = reason;
+        return this;
+    }
+
+    /**
+     * 获取备注
+     */
+    public String getReason() {
+        return this.remark;
     }
 } 

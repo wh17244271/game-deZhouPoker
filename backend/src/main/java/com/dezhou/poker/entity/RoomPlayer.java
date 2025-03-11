@@ -26,6 +26,18 @@ public class RoomPlayer implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * 玩家状态枚举
+     */
+    public enum PlayerStatus {
+        WAITING,    // 等待中
+        READY,      // 准备就绪
+        PLAYING,    // 游戏中
+        FOLDED,     // 已弃牌
+        ALL_IN,     // 全押
+        OFFLINE     // 离线
+    }
+
+    /**
      * ID
      */
     @TableId(value = "id", type = IdType.AUTO)
@@ -62,28 +74,16 @@ public class RoomPlayer implements Serializable {
     private String status;
 
     /**
-     * 是否是庄家
+     * 手牌
      */
-    @TableField("is_dealer")
-    private Boolean isDealer;
+    @TableField("hole_cards")
+    private String holeCards;
 
     /**
-     * 是否是小盲注
+     * 加入时间
      */
-    @TableField("is_small_blind")
-    private Boolean isSmallBlind;
-
-    /**
-     * 是否是大盲注
-     */
-    @TableField("is_big_blind")
-    private Boolean isBigBlind;
-
-    /**
-     * 创建时间
-     */
-    @TableField("created_at")
-    private LocalDateTime createdAt;
+    @TableField("joined_at")
+    private LocalDateTime joinedAt;
 
     /**
      * 更新时间

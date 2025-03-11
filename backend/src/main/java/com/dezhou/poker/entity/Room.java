@@ -26,6 +26,15 @@ public class Room implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * 房间状态枚举
+     */
+    public enum RoomStatus {
+        WAITING,    // 等待中
+        PLAYING,    // 游戏中
+        FINISHED    // 已结束
+    }
+
+    /**
      * 房间ID
      */
     @TableId(value = "id", type = IdType.AUTO)
