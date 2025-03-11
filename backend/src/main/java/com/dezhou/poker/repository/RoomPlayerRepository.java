@@ -1,7 +1,6 @@
 package com.dezhou.poker.repository;
 
-import com.dezhou.poker.model.RoomPlayer;
-import com.dezhou.poker.model.RoomPlayerId;
+import com.dezhou.poker.entity.RoomPlayer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

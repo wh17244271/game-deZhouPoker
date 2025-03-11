@@ -1,6 +1,6 @@
 package com.dezhou.poker.repository;
 
-import com.dezhou.poker.model.AllinVote;
+import com.dezhou.poker.entity.AllinVote;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

@@ -1,6 +1,6 @@
 package com.dezhou.poker.repository;
 
-import com.dezhou.poker.model.User;
+import com.dezhou.poker.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
