@@ -37,7 +37,7 @@ public interface AllinVoteRepository extends JpaRepository<AllinVote, Long> {
      * @param gameId 游戏ID
      * @return 各选项的票数
      */
-    @Query("SELECT v.voteOption, COUNT(v) FROM AllinVote v WHERE v.game.id = ?1 GROUP BY v.voteOption")
+    @Query("SELECT v.voteOption, COUNT(v) FROM AllinVote v WHERE v.gameId = ?1 GROUP BY v.voteOption")
     List<Object[]> countVotesByGameId(Long gameId);
 
     /**
@@ -46,6 +46,6 @@ public interface AllinVoteRepository extends JpaRepository<AllinVote, Long> {
      * @param gameId 游戏ID
      * @return 最多票数的选项
      */
-    @Query("SELECT v.voteOption FROM AllinVote v WHERE v.game.id = ?1 GROUP BY v.voteOption ORDER BY COUNT(v) DESC")
+    @Query("SELECT v.voteOption FROM AllinVote v WHERE v.gameId = ?1 GROUP BY v.voteOption ORDER BY COUNT(v) DESC")
     List<Integer> findMostVotedOptionByGameId(Long gameId);
 }

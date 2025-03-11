@@ -7,10 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * 房间玩家关系仓库接口
+ * 房间玩家仓库接口
  */
 @Repository
-public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, RoomPlayerId> {
+public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, Long> {
 
     /**
      * 根据房间ID查找房间玩家

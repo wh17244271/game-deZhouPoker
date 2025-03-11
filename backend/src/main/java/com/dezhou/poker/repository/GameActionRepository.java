@@ -46,6 +46,6 @@ public interface GameActionRepository extends JpaRepository<GameAction, Long> {
      * @param gameId 游戏ID
      * @return 奖池大小
      */
-    @Query("SELECT SUM(a.amount) FROM GameAction a WHERE a.game.id = ?1 AND a.actionType IN ('BET', 'CALL', 'RAISE', 'ALL_IN')")
+    @Query("SELECT SUM(a.amount) FROM GameAction a WHERE a.gameId = ?1 AND a.actionType IN ('BET', 'CALL', 'RAISE', 'ALL_IN')")
     BigDecimal calculatePotSize(Long gameId);
 }

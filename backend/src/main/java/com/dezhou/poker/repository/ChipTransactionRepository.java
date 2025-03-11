@@ -56,7 +56,7 @@ public interface ChipTransactionRepository extends JpaRepository<ChipTransaction
      * @param userId 用户ID
      * @return 总赢钱金额
      */
-    @Query("SELECT SUM(t.amount) FROM ChipTransaction t WHERE t.user.id = ?1 AND t.transactionType = 'WIN'")
+    @Query("SELECT SUM(t.amount) FROM ChipTransaction t WHERE t.userId = ?1 AND t.type = 'WIN'")
     BigDecimal calculateTotalWinnings(Long userId);
 
     /**
@@ -65,6 +65,6 @@ public interface ChipTransactionRepository extends JpaRepository<ChipTransaction
      * @param userId 用户ID
      * @return 总输钱金额
      */
-    @Query("SELECT SUM(ABS(t.amount)) FROM ChipTransaction t WHERE t.user.id = ?1 AND t.transactionType = 'LOSE'")
+    @Query("SELECT SUM(ABS(t.amount)) FROM ChipTransaction t WHERE t.userId = ?1 AND t.type = 'LOSE'")
     BigDecimal calculateTotalLosses(Long userId);
 }

@@ -1,6 +1,6 @@
 package com.dezhou.poker.service;
 
-import com.dezhou.poker.model.User;
+import com.dezhou.poker.entity.User;
 import com.dezhou.poker.repository.UserRepository;
 import com.dezhou.poker.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
