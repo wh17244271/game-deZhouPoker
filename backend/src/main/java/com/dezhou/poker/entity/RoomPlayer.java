@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 房间玩家关系实体类
+ * 房间玩家实体类
  *
  * @author CodeGenerator
  * @since 2023-03-11
@@ -26,15 +26,21 @@ public class RoomPlayer implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * ID
+     */
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
+    /**
      * 房间ID
      */
-    @TableId(value = "room_id", type = IdType.INPUT)
+    @TableField("room_id")
     private Long roomId;
 
     /**
      * 用户ID
      */
-    @TableId(value = "user_id", type = IdType.INPUT)
+    @TableField("user_id")
     private Long userId;
 
     /**
@@ -56,10 +62,28 @@ public class RoomPlayer implements Serializable {
     private String status;
 
     /**
-     * 加入时间
+     * 是否是庄家
      */
-    @TableField("joined_at")
-    private LocalDateTime joinedAt;
+    @TableField("is_dealer")
+    private Boolean isDealer;
+
+    /**
+     * 是否是小盲注
+     */
+    @TableField("is_small_blind")
+    private Boolean isSmallBlind;
+
+    /**
+     * 是否是大盲注
+     */
+    @TableField("is_big_blind")
+    private Boolean isBigBlind;
+
+    /**
+     * 创建时间
+     */
+    @TableField("created_at")
+    private LocalDateTime createdAt;
 
     /**
      * 更新时间
@@ -73,4 +97,24 @@ public class RoomPlayer implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 用户
+     */
+    @TableField(exist = false)
+    private User user;
+
+    /**
+     * 获取玩家状态枚举
+     */
+    public PlayerStatus getStatusEnum() {
+        return PlayerStatus.valueOf(status);
+    }
+
+    /**
+     * 设置玩家状态枚举
+     */
+    public void setStatusEnum(PlayerStatus status) {
+        this.status = status.name();
+    }
 } 

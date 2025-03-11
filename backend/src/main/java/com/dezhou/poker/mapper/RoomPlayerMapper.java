@@ -18,12 +18,14 @@ import java.util.List;
 public interface RoomPlayerMapper extends BaseMapper<RoomPlayer> {
 
     /**
-     * 查询房间内的所有玩家
+     * 根据房间ID查询玩家列表
      *
      * @param roomId 房间ID
      * @return 玩家列表
      */
-    @Select("SELECT * FROM room_player WHERE room_id = #{roomId} AND deleted = 0")
+    @Select("SELECT rp.*, u.* FROM room_player rp " +
+            "LEFT JOIN user u ON rp.user_id = u.id " +
+            "WHERE rp.room_id = #{roomId} AND rp.deleted = 0")
     List<RoomPlayer> selectByRoomId(@Param("roomId") Long roomId);
 
     /**

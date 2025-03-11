@@ -80,6 +80,12 @@ public class Room implements Serializable {
     private String status;
 
     /**
+     * 当前玩家数
+     */
+    @TableField("current_players")
+    private Integer currentPlayers;
+
+    /**
      * 创建时间
      */
     @TableField("created_at")
@@ -97,4 +103,18 @@ public class Room implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 获取房间状态枚举
+     */
+    public RoomStatus getStatusEnum() {
+        return RoomStatus.valueOf(status);
+    }
+
+    /**
+     * 设置房间状态枚举
+     */
+    public void setStatusEnum(RoomStatus status) {
+        this.status = status.name();
+    }
 } 

@@ -22,39 +22,45 @@ public class AllinVote implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 投票ID
+     * 复合主键
      */
-    @TableId(value = "id", type = IdType.AUTO)
-    private Long id;
+    @TableId(type = IdType.NONE)
+    private AllinVoteId id;
 
     /**
-     * 游戏ID
+     * 游戏
      */
-    @TableField("game_id")
-    private Long gameId;
+    @TableField(exist = false)
+    private GameHistory game;
 
     /**
-     * 用户ID
+     * 用户
      */
-    @TableField("user_id")
-    private Long userId;
+    @TableField(exist = false)
+    private User user;
 
     /**
-     * 投票选项 (1: 一次, 2: 两次, 3: 三次)
+     * 投票选项
      */
     @TableField("vote_option")
     private Integer voteOption;
 
     /**
+     * 投票时间
+     */
+    @TableField("vote_time")
+    private LocalDateTime voteTime;
+
+    /**
      * 创建时间
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
     /**

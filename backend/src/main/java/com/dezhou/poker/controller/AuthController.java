@@ -4,7 +4,7 @@ import com.dezhou.poker.dto.request.LoginRequest;
 import com.dezhou.poker.dto.request.SignUpRequest;
 import com.dezhou.poker.dto.response.ApiResponse;
 import com.dezhou.poker.dto.response.JwtAuthenticationResponse;
-import com.dezhou.poker.model.User;
+import com.dezhou.poker.entity.User;
 import com.dezhou.poker.security.JwtTokenProvider;
 import com.dezhou.poker.security.UserPrincipal;
 import com.dezhou.poker.service.UserService;

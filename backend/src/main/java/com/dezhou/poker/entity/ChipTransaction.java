@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 筹码交易记录实体类
+ * 筹码交易实体类
  */
 @Data
 @NoArgsConstructor
@@ -35,45 +35,39 @@ public class ChipTransaction implements Serializable {
     private Long userId;
 
     /**
-     * 交易金额
-     */
-    @TableField("amount")
-    private BigDecimal amount;
-
-    /**
-     * 交易类型 (DEPOSIT, WITHDRAW, GAME_WIN, GAME_LOSS)
-     */
-    @TableField("type")
-    private String type;
-
-    /**
-     * 交易原因
-     */
-    @TableField("reason")
-    private String reason;
-
-    /**
-     * 操作员ID
-     */
-    @TableField("operator_id")
-    private Long operatorId;
-
-    /**
-     * 关联游戏ID
+     * 游戏ID
      */
     @TableField("game_id")
     private Long gameId;
 
     /**
+     * 交易类型
+     */
+    @TableField("transaction_type")
+    private String transactionType;
+
+    /**
+     * 金额
+     */
+    @TableField("amount")
+    private BigDecimal amount;
+
+    /**
+     * 交易时间
+     */
+    @TableField("transaction_time")
+    private LocalDateTime transactionTime;
+
+    /**
      * 创建时间
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
     /**
@@ -82,4 +76,40 @@ public class ChipTransaction implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 用户
+     */
+    @TableField(exist = false)
+    private User user;
+
+    /**
+     * 游戏
+     */
+    @TableField(exist = false)
+    private GameHistory game;
+
+    /**
+     * 交易类型枚举
+     */
+    public enum TransactionType {
+        WIN,        // 赢得筹码
+        LOSE,       // 输掉筹码
+        RECHARGE,   // 充值
+        WITHDRAW    // 提现
+    }
+
+    /**
+     * 获取交易类型枚举
+     */
+    public TransactionType getTransactionTypeEnum() {
+        return TransactionType.valueOf(transactionType);
+    }
+
+    /**
+     * 设置交易类型枚举
+     */
+    public void setTransactionTypeEnum(TransactionType transactionType) {
+        this.transactionType = transactionType.name();
+    }
 } 

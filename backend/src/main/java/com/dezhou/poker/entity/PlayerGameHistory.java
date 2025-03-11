@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 玩家游戏历史记录实体类
+ * 玩家游戏历史实体类
  */
 @Data
 @NoArgsConstructor
@@ -23,22 +23,34 @@ public class PlayerGameHistory implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
+     * 复合主键
+     */
+    @TableId(type = IdType.NONE)
+    private PlayerGameHistoryId id;
+
+    /**
      * 游戏ID
      */
-    @TableId(value = "game_id", type = IdType.INPUT)
+    @TableField("game_id")
     private Long gameId;
 
     /**
      * 用户ID
      */
-    @TableId(value = "user_id", type = IdType.INPUT)
+    @TableField("user_id")
     private Long userId;
 
     /**
-     * 座位号
+     * 游戏
      */
-    @TableField("seat_number")
-    private Integer seatNumber;
+    @TableField(exist = false)
+    private GameHistory game;
+
+    /**
+     * 用户
+     */
+    @TableField(exist = false)
+    private User user;
 
     /**
      * 初始筹码
@@ -53,33 +65,27 @@ public class PlayerGameHistory implements Serializable {
     private BigDecimal finalChips;
 
     /**
-     * 是否获胜
-     */
-    @TableField("is_winner")
-    private Boolean isWinner;
-
-    /**
-     * 手牌
-     */
-    @TableField("hole_cards")
-    private String holeCards;
-
-    /**
      * 最终牌型
      */
     @TableField("final_hand_type")
     private String finalHandType;
 
     /**
+     * 是否获胜
+     */
+    @TableField("is_winner")
+    private Boolean isWinner;
+
+    /**
      * 创建时间
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
     /**
@@ -88,4 +94,20 @@ public class PlayerGameHistory implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 设置游戏
+     */
+    public void setGame(GameHistory game) {
+        this.game = game;
+        this.gameId = game.getId();
+    }
+
+    /**
+     * 设置用户
+     */
+    public void setUser(User user) {
+        this.user = user;
+        this.userId = user.getId();
+    }
 } 

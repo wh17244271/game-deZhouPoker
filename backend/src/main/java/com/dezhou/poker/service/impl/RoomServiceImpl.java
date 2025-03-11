@@ -1,13 +1,16 @@
 package com.dezhou.poker.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dezhou.poker.entity.Room;
+import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.exception.ResourceNotFoundException;
 import com.dezhou.poker.mapper.RoomMapper;
+import com.dezhou.poker.mapper.RoomPlayerMapper;
 import com.dezhou.poker.service.RoomService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,10 +26,13 @@ import java.util.List;
  * @since 2023-03-11
  */
 @Service
+@Transactional
 public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements RoomService {
 
+    @Autowired
+    private RoomPlayerMapper roomPlayerMapper;
+
     @Override
-    @Transactional
     public Room createRoom(String name, String password, Long creatorId, Integer minPlayers, Integer maxPlayers, BigDecimal smallBlind, BigDecimal bigBlind) {
         Room room = new Room();
         room.setName(name);
@@ -36,7 +42,8 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
         room.setMaxPlayers(maxPlayers);
         room.setSmallBlind(smallBlind);
         room.setBigBlind(bigBlind);
-        room.setStatus("ACTIVE");
+        room.setCurrentPlayers(0);
+        room.setStatus("WAITING");
         room.setCreatedAt(LocalDateTime.now());
         room.setUpdatedAt(LocalDateTime.now());
         room.setDeleted(0);
@@ -47,19 +54,29 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
 
     @Override
     public List<Room> getActiveRooms() {
-        return baseMapper.selectActiveRooms();
+        return list(new QueryWrapper<Room>()
+            .eq("status", "WAITING")
+            .or()
+            .eq("status", "PLAYING"));
     }
 
     @Override
     public IPage<Room> getActiveRoomsPage(int page, int size) {
-        Page<Room> pageParam = new Page<>(page, size);
-        return baseMapper.selectActiveRoomsPage(pageParam);
+        return page(new Page<>(page, size),
+            new QueryWrapper<Room>()
+                .eq("status", "WAITING")
+                .or()
+                .eq("status", "PLAYING"));
     }
 
     @Override
-    @Transactional
     public boolean updateStatus(Long roomId, String status) {
-        return baseMapper.updateStatus(roomId, status) > 0;
+        Room room = getById(roomId);
+        if (room != null) {
+            room.setStatus(status);
+            return updateById(room);
+        }
+        return false;
     }
 
     @Override
@@ -81,5 +98,14 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
         
         // 比较密码
         return room.getPassword().equals(password);
+    }
+
+    @Override
+    public List<RoomPlayer> getRoomPlayers(Long roomId) {
+        return roomPlayerMapper.selectList(
+            new QueryWrapper<RoomPlayer>()
+                .eq("room_id", roomId)
+                .orderBy(true, true, "position")
+        );
     }
 } 

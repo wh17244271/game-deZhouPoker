@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 游戏历史记录实体类
+ * 游戏历史实体类
  */
 @Data
 @NoArgsConstructor
@@ -35,7 +35,13 @@ public class GameHistory implements Serializable {
     private Long roomId;
 
     /**
-     * 游戏状态 (WAITING, RUNNING, FINISHED)
+     * 房间
+     */
+    @TableField(exist = false)
+    private Room room;
+
+    /**
+     * 游戏状态
      */
     @TableField("status")
     private String status;
@@ -71,6 +77,12 @@ public class GameHistory implements Serializable {
     private String communityCards;
 
     /**
+     * 奖池大小
+     */
+    @TableField("pot_size")
+    private BigDecimal potSize;
+
+    /**
      * 开始时间
      */
     @TableField("start_time")
@@ -85,13 +97,13 @@ public class GameHistory implements Serializable {
     /**
      * 创建时间
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
     /**
@@ -100,4 +112,26 @@ public class GameHistory implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 获取游戏状态枚举
+     */
+    public GameStatus getStatusEnum() {
+        return GameStatus.valueOf(status);
+    }
+
+    /**
+     * 设置游戏状态枚举
+     */
+    public void setStatusEnum(GameStatus status) {
+        this.status = status.name();
+    }
+
+    /**
+     * 设置房间
+     */
+    public void setRoom(Room room) {
+        this.room = room;
+        this.roomId = room.getId();
+    }
 } 

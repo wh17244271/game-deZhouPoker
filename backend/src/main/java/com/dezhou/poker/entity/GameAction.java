@@ -41,7 +41,7 @@ public class GameAction implements Serializable {
     private Long userId;
 
     /**
-     * 动作类型 (FOLD, CHECK, CALL, BET, RAISE, ALL_IN)
+     * 动作类型
      */
     @TableField("action_type")
     private String actionType;
@@ -53,21 +53,27 @@ public class GameAction implements Serializable {
     private BigDecimal amount;
 
     /**
-     * 轮次 (PRE_FLOP, FLOP, TURN, RIVER)
+     * 轮次
      */
     @TableField("round")
     private String round;
 
     /**
+     * 动作时间
+     */
+    @TableField("action_time")
+    private LocalDateTime actionTime;
+
+    /**
      * 创建时间
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updated_at")
     private LocalDateTime updatedAt;
 
     /**
@@ -76,4 +82,66 @@ public class GameAction implements Serializable {
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
+
+    /**
+     * 游戏
+     */
+    @TableField(exist = false)
+    private GameHistory game;
+
+    /**
+     * 用户
+     */
+    @TableField(exist = false)
+    private User user;
+
+    /**
+     * 动作类型枚举
+     */
+    public enum ActionType {
+        FOLD,       // 弃牌
+        CHECK,      // 过牌
+        CALL,       // 跟注
+        BET,        // 下注
+        RAISE,      // 加注
+        ALL_IN      // 全下
+    }
+
+    /**
+     * 游戏轮次枚举
+     */
+    public enum GameRound {
+        PRE_FLOP,   // 翻牌前
+        FLOP,       // 翻牌
+        TURN,       // 转牌
+        RIVER       // 河牌
+    }
+
+    /**
+     * 获取动作类型枚举
+     */
+    public ActionType getActionTypeEnum() {
+        return ActionType.valueOf(actionType);
+    }
+
+    /**
+     * 设置动作类型枚举
+     */
+    public void setActionTypeEnum(ActionType actionType) {
+        this.actionType = actionType.name();
+    }
+
+    /**
+     * 获取游戏轮次枚举
+     */
+    public GameRound getRoundEnum() {
+        return GameRound.valueOf(round);
+    }
+
+    /**
+     * 设置游戏轮次枚举
+     */
+    public void setRoundEnum(GameRound round) {
+        this.round = round.name();
+    }
 } 

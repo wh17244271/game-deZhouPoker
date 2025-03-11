@@ -2,17 +2,21 @@ package com.dezhou.poker.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dezhou.poker.entity.Room;
+import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.exception.ResourceNotFoundException;
-import com.dezhou.poker.model.RoomPlayer;
 import com.dezhou.poker.model.RoomPlayerId;
 import com.dezhou.poker.model.User;
 import com.dezhou.poker.repository.RoomPlayerRepository;
 import com.dezhou.poker.repository.RoomRepository;
+import com.dezhou.poker.mapper.RoomMapper;
+import com.dezhou.poker.mapper.RoomPlayerMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -72,4 +76,70 @@ public interface RoomService extends IService<Room> {
      * @return 是否匹配
      */
     boolean checkPassword(Long roomId, String password);
+
+    /**
+     * 获取房间玩家列表
+     *
+     * @param roomId 房间ID
+     * @return 玩家列表
+     */
+    List<RoomPlayer> getRoomPlayers(Long roomId);
+}
+
+@Service
+@Transactional
+public class RoomService extends ServiceImpl<RoomMapper, Room> {
+    
+    @Autowired
+    private RoomPlayerMapper roomPlayerMapper;
+    
+    /**
+     * 获取房间玩家列表
+     *
+     * @param roomId 房间ID
+     * @return 房间玩家列表
+     */
+    public List<RoomPlayer> getRoomPlayers(Long roomId) {
+        return roomPlayerMapper.selectList(
+            new QueryWrapper<RoomPlayer>()
+                .eq("room_id", roomId)
+                .orderBy(true, true, "position")
+        );
+    }
+    
+    /**
+     * 更新房间状态
+     *
+     * @param roomId 房间ID
+     * @param status 状态
+     */
+    public void updateStatus(Long roomId, String status) {
+        Room room = getById(roomId);
+        if (room != null) {
+            room.setStatus(status);
+            updateById(room);
+        }
+    }
+    
+    /**
+     * 获取房间信息
+     *
+     * @param roomId 房间ID
+     * @return 房间信息
+     */
+    @Override
+    public Room getById(Long roomId) {
+        return super.getById(roomId);
+    }
+    
+    /**
+     * 更新房间信息
+     *
+     * @param room 房间信息
+     * @return 是否成功
+     */
+    @Override
+    public boolean updateById(Room room) {
+        return super.updateById(room);
+    }
 }

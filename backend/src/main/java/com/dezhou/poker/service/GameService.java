@@ -1,8 +1,12 @@
 package com.dezhou.poker.service;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.dezhou.poker.exception.ResourceNotFoundException;
-import com.dezhou.poker.model.*;
-import com.dezhou.poker.repository.*;
+import com.dezhou.poker.entity.*;
+import com.dezhou.poker.entity.Room.RoomStatus;
+import com.dezhou.poker.entity.GameHistory.GameStatus;
+import com.dezhou.poker.entity.RoomPlayer.PlayerStatus;
+import com.dezhou.poker.mapper.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,22 +21,20 @@ import java.util.stream.Collectors;
  * 游戏服务类
  */
 @Service
-public class GameService {
+@Transactional
+public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
 
     @Autowired
-    private GameHistoryRepository gameHistoryRepository;
+    private PlayerGameHistoryMapper playerGameHistoryMapper;
 
     @Autowired
-    private PlayerGameHistoryRepository playerGameHistoryRepository;
+    private GameActionMapper gameActionMapper;
 
     @Autowired
-    private GameActionRepository gameActionRepository;
+    private AllinVoteMapper allinVoteMapper;
 
     @Autowired
-    private AllinVoteRepository allinVoteRepository;
-
-    @Autowired
-    private ChipTransactionRepository chipTransactionRepository;
+    private ChipTransactionMapper chipTransactionMapper;
 
     @Autowired
     private RoomService roomService;
@@ -48,10 +50,10 @@ public class GameService {
      */
     @Transactional
     public GameHistory startNewGame(Long roomId) {
-        Room room = roomService.findById(roomId);
+        Room room = roomService.getById(roomId);
         
         // 检查房间状态
-        if (room.getStatus() == Room.RoomStatus.PLAYING) {
+        if (room.getStatusEnum() == RoomStatus.PLAYING) {
             throw new IllegalStateException("房间已经在游戏中");
         }
         
@@ -62,33 +64,66 @@ public class GameService {
         
         // 创建游戏历史记录
         GameHistory gameHistory = new GameHistory();
-        gameHistory.setRoom(room);
+        gameHistory.setRoomId(room.getId());
         gameHistory.setStartTime(LocalDateTime.now());
-        gameHistory.setStatus(GameHistory.GameStatus.IN_PROGRESS);
-        gameHistory = gameHistoryRepository.save(gameHistory);
+        gameHistory.setStatusEnum(GameStatus.IN_PROGRESS);
+        save(gameHistory);
         
         // 获取房间玩家
         List<RoomPlayer> roomPlayers = roomService.getRoomPlayers(roomId);
         
         // 为每个玩家创建游戏历史记录
         for (RoomPlayer roomPlayer : roomPlayers) {
-            if (roomPlayer.getStatus() == RoomPlayer.PlayerStatus.WAITING) {
+            if (roomPlayer.getStatusEnum() == PlayerStatus.WAITING) {
                 // 更新玩家状态为活跃
-                roomPlayer.setStatus(RoomPlayer.PlayerStatus.ACTIVE);
+                roomPlayer.setStatusEnum(PlayerStatus.ACTIVE);
                 
                 // 创建玩家游戏历史记录
-                PlayerGameHistoryId id = new PlayerGameHistoryId(gameHistory.getId(), roomPlayer.getUser().getId());
                 PlayerGameHistory playerGameHistory = new PlayerGameHistory();
-                playerGameHistory.setId(id);
-                playerGameHistory.setGame(gameHistory);
-                playerGameHistory.setUser(roomPlayer.getUser());
+                playerGameHistory.setId(new PlayerGameHistoryId(gameHistory.getId(), roomPlayer.getUserId()));
+                playerGameHistory.setGameId(gameHistory.getId());
+                playerGameHistory.setUserId(roomPlayer.getUserId());
                 playerGameHistory.setInitialChips(roomPlayer.getCurrentChips());
-                playerGameHistoryRepository.save(playerGameHistory);
+                playerGameHistoryMapper.insert(playerGameHistory);
             }
         }
         
         // 更新房间状态
-        roomService.updateRoomStatus(roomId, Room.RoomStatus.PLAYING);
+        room.setStatusEnum(RoomStatus.PLAYING);
+        roomService.updateById(room);
+        
+        return gameHistory;
+    }
+
+    /**
+     * 结束游戏
+     *
+     * @param gameId         游戏ID
+     * @param communityCards 公共牌
+     * @return 更新后的游戏
+     */
+    @Transactional
+    public GameHistory endGame(Long gameId, String communityCards) {
+        GameHistory gameHistory = getById(gameId);
+        if (gameHistory == null) {
+            throw new IllegalStateException("游戏不存在");
+        }
+        
+        // 更新游戏历史记录
+        gameHistory.setStatusEnum(GameStatus.COMPLETED);
+        gameHistory.setEndTime(LocalDateTime.now());
+        gameHistory.setCommunityCards(communityCards);
+        
+        // 计算奖池大小
+        BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
+        gameHistory.setPotSize(potSize);
+        
+        // 更新房间状态
+        Room room = roomService.getById(gameHistory.getRoomId());
+        room.setStatusEnum(RoomStatus.WAITING);
+        roomService.updateById(room);
+        
+        updateById(gameHistory);
         
         return gameHistory;
     }
@@ -105,19 +140,20 @@ public class GameService {
      */
     @Transactional
     public GameAction recordGameAction(Long gameId, Long userId, GameAction.ActionType actionType, BigDecimal amount, GameAction.GameRound round) {
-        GameHistory gameHistory = findById(gameId);
-        User user = userService.findById(userId);
+        GameHistory gameHistory = getById(gameId);
+        User user = userService.getById(userId);
         
         // 创建游戏动作
         GameAction gameAction = new GameAction();
-        gameAction.setGame(gameHistory);
-        gameAction.setUser(user);
-        gameAction.setActionType(actionType);
+        gameAction.setGameId(gameId);
+        gameAction.setUserId(userId);
+        gameAction.setActionTypeEnum(actionType);
         gameAction.setAmount(amount);
-        gameAction.setRound(round);
+        gameAction.setRoundEnum(round);
         gameAction.setActionTime(LocalDateTime.now());
+        gameActionMapper.insert(gameAction);
         
-        return gameActionRepository.save(gameAction);
+        return gameAction;
     }
 
     /**
@@ -130,26 +166,28 @@ public class GameService {
      */
     @Transactional
     public AllinVote recordAllinVote(Long gameId, Long userId, Integer voteOption) {
-        GameHistory gameHistory = findById(gameId);
-        User user = userService.findById(userId);
+        GameHistory gameHistory = getById(gameId);
+        User user = userService.getById(userId);
         
         // 检查是否已经投票
-        AllinVote existingVote = allinVoteRepository.findByGameIdAndUserId(gameId, userId);
+        AllinVoteId voteId = new AllinVoteId(gameId, userId);
+        AllinVote existingVote = allinVoteMapper.selectById(voteId);
         if (existingVote != null) {
             // 更新投票
             existingVote.setVoteOption(voteOption);
             existingVote.setVoteTime(LocalDateTime.now());
-            return allinVoteRepository.save(existingVote);
+            allinVoteMapper.updateById(existingVote);
+            return existingVote;
         }
         
         // 创建新投票
         AllinVote allinVote = new AllinVote();
-        allinVote.setGame(gameHistory);
-        allinVote.setUser(user);
+        allinVote.setId(voteId);
         allinVote.setVoteOption(voteOption);
         allinVote.setVoteTime(LocalDateTime.now());
+        allinVoteMapper.insert(allinVote);
         
-        return allinVoteRepository.save(allinVote);
+        return allinVote;
     }
 
     /**
@@ -159,7 +197,7 @@ public class GameService {
      * @return 投票结果
      */
     public Map<Integer, Long> getAllinVoteResults(Long gameId) {
-        List<Object[]> results = allinVoteRepository.countVotesByGameId(gameId);
+        List<Object[]> results = allinVoteMapper.countVotesByGameId(gameId);
         
         // 转换为Map
         return results.stream()
@@ -176,34 +214,8 @@ public class GameService {
      * @return 最多票数的选项
      */
     public Integer getMostVotedAllinOption(Long gameId) {
-        List<Integer> options = allinVoteRepository.findMostVotedOptionByGameId(gameId);
+        List<Integer> options = allinVoteMapper.findMostVotedOptionByGameId(gameId);
         return options.isEmpty() ? null : options.get(0);
-    }
-
-    /**
-     * 结束游戏
-     *
-     * @param gameId         游戏ID
-     * @param communityCards 公共牌
-     * @return 更新后的游戏
-     */
-    @Transactional
-    public GameHistory endGame(Long gameId, String communityCards) {
-        GameHistory gameHistory = findById(gameId);
-        
-        // 更新游戏历史记录
-        gameHistory.setStatus(GameHistory.GameStatus.COMPLETED);
-        gameHistory.setEndTime(LocalDateTime.now());
-        gameHistory.setCommunityCards(communityCards);
-        
-        // 计算奖池大小
-        BigDecimal potSize = gameActionRepository.calculatePotSize(gameId);
-        gameHistory.setPotSize(potSize);
-        
-        // 更新房间状态
-        roomService.updateRoomStatus(gameHistory.getRoom().getId(), Room.RoomStatus.WAITING);
-        
-        return gameHistoryRepository.save(gameHistory);
     }
 
     /**
@@ -218,13 +230,16 @@ public class GameService {
     @Transactional
     public PlayerGameHistory updateWinner(Long gameId, Long userId, BigDecimal finalChips, String finalHandType) {
         PlayerGameHistoryId id = new PlayerGameHistoryId(gameId, userId);
-        PlayerGameHistory playerGameHistory = playerGameHistoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("PlayerGameHistory", "id", id));
+        PlayerGameHistory playerGameHistory = playerGameHistoryMapper.selectById(id);
+        if (playerGameHistory == null) {
+            throw new IllegalStateException("玩家游戏历史记录不存在");
+        }
         
         // 更新玩家游戏历史记录
         playerGameHistory.setFinalChips(finalChips);
         playerGameHistory.setFinalHandType(finalHandType);
         playerGameHistory.setIsWinner(true);
+        playerGameHistoryMapper.updateById(playerGameHistory);
         
         // 更新用户统计信息
         userService.updateGameStats(userId, true);
@@ -234,14 +249,14 @@ public class GameService {
         
         // 记录筹码变动
         ChipTransaction chipTransaction = new ChipTransaction();
-        chipTransaction.setUser(playerGameHistory.getUser());
+        chipTransaction.setUserId(userId);
+        chipTransaction.setGameId(gameId);
         chipTransaction.setAmount(finalChips);
-        chipTransaction.setTransactionType(ChipTransaction.TransactionType.WIN);
-        chipTransaction.setGame(playerGameHistory.getGame());
+        chipTransaction.setTransactionTypeEnum(ChipTransaction.TransactionType.WIN);
         chipTransaction.setTransactionTime(LocalDateTime.now());
-        chipTransactionRepository.save(chipTransaction);
+        chipTransactionMapper.insert(chipTransaction);
         
-        return playerGameHistoryRepository.save(playerGameHistory);
+        return playerGameHistory;
     }
 
     /**
@@ -251,8 +266,7 @@ public class GameService {
      * @return 游戏
      */
     public GameHistory findById(Long gameId) {
-        return gameHistoryRepository.findById(gameId)
-                .orElseThrow(() -> new ResourceNotFoundException("GameHistory", "id", gameId));
+        return getById(gameId);
     }
 
     /**
@@ -262,37 +276,37 @@ public class GameService {
      * @return 当前游戏
      */
     public GameHistory getCurrentGame(Long roomId) {
-        return gameHistoryRepository.findFirstByRoomIdAndStatusOrderByStartTimeDesc(roomId, GameHistory.GameStatus.IN_PROGRESS);
+        return getById(roomId);
     }
 
     /**
-     * 获取游戏玩家
+     * 获取游戏玩家列表
      *
      * @param gameId 游戏ID
-     * @return 游戏玩家列表
+     * @return 玩家列表
      */
     public List<PlayerGameHistory> getGamePlayers(Long gameId) {
-        return playerGameHistoryRepository.findByGameId(gameId);
+        return playerGameHistoryMapper.selectByGameId(gameId);
     }
 
     /**
-     * 获取游戏动作
+     * 获取游戏动作列表
      *
      * @param gameId 游戏ID
-     * @return 游戏动作列表
+     * @return 动作列表
      */
     public List<GameAction> getGameActions(Long gameId) {
-        return gameActionRepository.findByGameId(gameId);
+        return gameActionMapper.selectByGameId(gameId);
     }
 
     /**
-     * 获取游戏轮次动作
+     * 获取游戏轮次动作列表
      *
      * @param gameId 游戏ID
      * @param round  轮次
-     * @return 游戏动作列表
+     * @return 动作列表
      */
     public List<GameAction> getGameRoundActions(Long gameId, GameAction.GameRound round) {
-        return gameActionRepository.findByGameIdAndRound(gameId, round);
+        return gameActionMapper.selectByGameIdAndRound(gameId, round.name());
     }
 }
