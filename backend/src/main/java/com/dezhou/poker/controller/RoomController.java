@@ -275,16 +275,18 @@ public class RoomController {
                 }
             }
             
-            // 更新房间状态为游戏中
-            roomService.updateStatus(roomId, "PLAYING");
+         
+            
+            // 创建游戏实例
+            GameHistory gameHistory = gameService.startNewGame(roomId);
+
+               // 更新房间状态为游戏中
+           
             
             // 更新所有玩家状态为游戏中
             for (RoomPlayer player : players) {
                 roomPlayerService.updateStatus(roomId, player.getUserId(), "ACTIVE");
             }
-            
-            // 创建游戏实例
-            GameHistory gameHistory = gameService.startNewGame(roomId);
             
             // 返回游戏ID
             Map<String, Object> response = new HashMap<>();

@@ -29,6 +29,7 @@ public class PlayerGameHistory implements Serializable {
      * 复合主键
      */
     @EmbeddedId
+    @TableField(exist = false)
     private PlayerGameHistoryId id;
 
     /**

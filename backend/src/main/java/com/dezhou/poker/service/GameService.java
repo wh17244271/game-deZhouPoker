@@ -89,8 +89,11 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         }
         
         // 更新房间状态
-        room.setStatusEnum(Room.RoomStatus.PLAYING);
-        roomService.updateById(room);
+        // room.setStatusEnum(Room.RoomStatus.PLAYING);
+    
+        roomService.updateStatus(roomId, "PLAYING");
+
+        // roomService.updateById(room);
         
         return gameHistory;
     }
