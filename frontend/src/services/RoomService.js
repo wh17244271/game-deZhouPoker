@@ -110,7 +110,10 @@ class RoomService {
    * @returns {Promise} - 返回删除房间结果的Promise
    */
   deleteRoom(roomId) {
-    return axios.delete(`${API_URL}/rooms/${roomId}`, { headers: authHeader() });
+    return axios.delete(
+      `${API_URL}/rooms/${roomId}`,
+      { headers: authHeader() }
+    );
   }
 
   /**

@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 /**
  * 游戏服务类
@@ -283,7 +284,11 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
      * @return 当前游戏
      */
     public GameHistory getCurrentGame(Long roomId) {
-        return getById(roomId);
+        return getOne(new QueryWrapper<GameHistory>()
+                .eq("room_id", roomId)
+                .eq("status", GameHistory.GameStatus.IN_PROGRESS.name())
+                .orderByDesc("start_time")
+                .last("LIMIT 1"));
     }
 
     /**
@@ -315,5 +320,120 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
      */
     public List<GameAction> getGameRoundActions(Long gameId, GameAction.GameRound round) {
         return gameActionMapper.selectByGameIdAndRound(gameId, round.name());
+    }
+
+    /**
+     * 发牌
+     *
+     * @param gameId 游戏ID
+     * @return 发牌结果
+     */
+    @Transactional
+    public Map<String, Object> dealCards(Long gameId) {
+        GameHistory gameHistory = getById(gameId);
+        if (gameHistory == null) {
+            throw new ResourceNotFoundException("Game", "id", gameId);
+        }
+
+        // 获取游戏玩家
+        List<PlayerGameHistory> players = getGamePlayers(gameId);
+        if (players.isEmpty()) {
+            throw new IllegalStateException("游戏没有玩家");
+        }
+
+        // 生成牌组
+        String[] deck = generateDeck();
+        
+        // 洗牌
+        shuffleDeck(deck);
+        
+        // 发手牌
+        int cardIndex = 0;
+        for (PlayerGameHistory player : players) {
+            // 每个玩家发两张牌
+            String card1 = deck[cardIndex++];
+            String card2 = deck[cardIndex++];
+            String holeCards = card1 + "," + card2;
+            
+            // 更新玩家手牌
+            player.setHoleCards(holeCards);
+            playerGameHistoryMapper.updateById(player);
+        }
+        
+        // 发公共牌（预留5张）
+        String[] communityCards = new String[5];
+        for (int i = 0; i < 5; i++) {
+            communityCards[i] = deck[cardIndex++];
+        }
+        
+        // 更新游戏公共牌
+        gameHistory.setCommunityCards(String.join(",", communityCards));
+        updateById(gameHistory);
+        
+        // 构建结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("gameId", gameId);
+        result.put("playerCount", players.size());
+        result.put("communityCards", communityCards);
+        
+        return result;
+    }
+
+    /**
+     * 获取玩家手牌
+     *
+     * @param gameId 游戏ID
+     * @param userId 用户ID
+     * @return 玩家手牌
+     */
+    public String getPlayerCards(Long gameId, Long userId) {
+        PlayerGameHistory player = playerGameHistoryMapper.selectById(new PlayerGameHistoryId(gameId, userId));
+        return player != null ? player.getHoleCards() : null;
+    }
+
+    /**
+     * 获取公共牌
+     *
+     * @param gameId 游戏ID
+     * @return 公共牌
+     */
+    public String getCommunityCards(Long gameId) {
+        GameHistory gameHistory = getById(gameId);
+        return gameHistory != null ? gameHistory.getCommunityCards() : null;
+    }
+
+    /**
+     * 生成牌组
+     *
+     * @return 牌组数组
+     */
+    private String[] generateDeck() {
+        String[] suits = {"H", "D", "C", "S"}; // 红桃、方块、梅花、黑桃
+        String[] ranks = {"2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"};
+        String[] deck = new String[52];
+        
+        int index = 0;
+        for (String suit : suits) {
+            for (String rank : ranks) {
+                deck[index++] = rank + suit;
+            }
+        }
+        
+        return deck;
+    }
+
+    /**
+     * 洗牌
+     *
+     * @param deck 牌组数组
+     */
+    private void shuffleDeck(String[] deck) {
+        java.util.Random random = new java.util.Random();
+        for (int i = deck.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            String temp = deck[i];
+            deck[i] = deck[j];
+            deck[j] = temp;
+        }
     }
 }

@@ -1,12 +1,15 @@
 package com.dezhou.poker.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.dezhou.poker.dto.response.ApiResponse;
+import com.dezhou.poker.entity.GameHistory;
 import com.dezhou.poker.entity.Room;
 import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.entity.User;
 import com.dezhou.poker.exception.BusinessException;
 import com.dezhou.poker.security.UserPrincipal;
+import com.dezhou.poker.service.GameService;
 import com.dezhou.poker.service.RoomPlayerService;
 import com.dezhou.poker.service.RoomService;
 import com.dezhou.poker.service.UserService;
@@ -36,6 +39,9 @@ public class RoomController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private GameService gameService;
 
     /**
      * 创建房间
@@ -257,9 +263,17 @@ public class RoomController {
                 }
             }
             
-            // if (!allReady) {
-            //     return ResponseEntity.badRequest().body(new ApiResponse(false, "有玩家尚未准备，无法开始游戏"));
-            // }
+            // 检查房间是否已经在游戏中
+            if ("PLAYING".equals(room.getStatus())) {
+                // 如果房间已经在游戏中，尝试获取当前游戏
+                GameHistory existingGame = gameService.getCurrentGame(roomId);
+                if (existingGame != null) {
+                    // 返回已存在的游戏ID
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("gameId", existingGame.getId());
+                    return ResponseEntity.ok(new ApiResponse(true, "游戏已经开始", response));
+                }
+            }
             
             // 更新房间状态为游戏中
             roomService.updateStatus(roomId, "PLAYING");
@@ -269,7 +283,68 @@ public class RoomController {
                 roomPlayerService.updateStatus(roomId, player.getUserId(), "ACTIVE");
             }
             
-            return ResponseEntity.ok(new ApiResponse(true, "游戏开始成功"));
+            // 创建游戏实例
+            GameHistory gameHistory = gameService.startNewGame(roomId);
+            
+            // 返回游戏ID
+            Map<String, Object> response = new HashMap<>();
+            response.put("gameId", gameHistory.getId());
+            
+            return ResponseEntity.ok(new ApiResponse(true, "游戏开始成功", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage()));
+        }
+    }
+
+    /**
+     * 删除房间
+     *
+     * @param currentUser 当前用户
+     * @param roomId      房间ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/{roomId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> deleteRoom(@AuthenticationPrincipal UserPrincipal currentUser,
+                                       @PathVariable Long roomId) {
+        try {
+            // 获取房间
+            Room room = roomService.getById(roomId);
+            if (room == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "房间不存在"));
+            }
+            
+            // 检查是否是房主
+            if (!room.getCreatorId().equals(currentUser.getId())) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "只有房主才能删除房间"));
+            }
+            
+            // 检查房间状态
+            if ("PLAYING".equals(room.getStatus())) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "游戏进行中，无法删除房间"));
+            }
+            
+            // 获取房间内的所有玩家
+            List<RoomPlayer> players = roomPlayerService.getRoomPlayers(roomId);
+            
+            // 将所有玩家的筹码返还
+            for (RoomPlayer player : players) {
+                // 跳过房主自己
+                if (!player.getUserId().equals(currentUser.getId())) {
+                    // 返还筹码
+                    userService.updateChips(player.getUserId(), player.getCurrentChips());
+                    
+                    // 删除房间玩家关系
+                    roomPlayerService.remove(new LambdaQueryWrapper<RoomPlayer>()
+                            .eq(RoomPlayer::getRoomId, roomId)
+                            .eq(RoomPlayer::getUserId, player.getUserId()));
+                }
+            }
+            
+            // 删除房间
+            roomService.removeById(roomId);
+            
+            return ResponseEntity.ok(new ApiResponse(true, "房间删除成功"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage()));
         }

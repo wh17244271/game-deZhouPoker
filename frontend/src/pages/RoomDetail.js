@@ -118,20 +118,23 @@ const RoomDetail = ({ currentUser }) => {
       return;
     }
     
-    // 检查座位是否已被占用
-    const seatTaken = players.some(player => player.seatNumber === seatNumber);
-    if (seatTaken) {
-      setJoinError('该座位已被占用，请选择其他座位');
+    // 获取可用座位
+    const availableSeats = getAvailableSeats();
+    if (availableSeats.length === 0) {
+      setJoinError('房间已满，无法加入');
       return;
     }
     
-    RoomService.joinRoom(roomId, seatNumber, buyIn)
+    // 检查选择的座位是否可用，如果不可用，自动选择下一个可用座位
+    const selectedSeat = availableSeats.includes(seatNumber) ? seatNumber : getNextAvailableSeat();
+    
+    RoomService.joinRoom(roomId, selectedSeat, buyIn)
       .then(response => {
         setShowJoinModal(false);
         loadRoomDetails();
         
         // 重置表单
-        setSeatNumber(1);
+        setSeatNumber(getNextAvailableSeat());
         setBuyIn(100);
         setPassword('');
       })
@@ -202,6 +205,18 @@ const RoomDetail = ({ currentUser }) => {
     return allSeats.filter(seat => !takenSeats.includes(seat));
   };
 
+  // 获取最近的可用座位
+  const getNextAvailableSeat = () => {
+    const availableSeats = getAvailableSeats();
+    if (availableSeats.length === 0) return 1; // 如果没有可用座位，返回1
+    
+    // 按座位号排序
+    availableSeats.sort((a, b) => a - b);
+    
+    // 返回第一个可用座位
+    return availableSeats[0];
+  };
+
   // 开始游戏
   const handleStartGame = () => {
     setStartGameLoading(true);
@@ -221,6 +236,24 @@ const RoomDetail = ({ currentUser }) => {
         
         setError(resMessage);
         setStartGameLoading(false);
+      });
+  };
+
+  // 删除房间
+  const handleDeleteRoom = () => {
+    RoomService.deleteRoom(roomId)
+      .then(response => {
+        navigate('/rooms');
+      })
+      .catch(error => {
+        const resMessage =
+          (error.response &&
+            error.response.data &&
+            error.response.data.message) ||
+          error.message ||
+          error.toString();
+        
+        setError(resMessage);
       });
   };
 
@@ -289,6 +322,18 @@ const RoomDetail = ({ currentUser }) => {
           </p>
         </Col>
         <Col md={4} className="text-end">
+          {/* 房主删除房间按钮 - 始终显示 */}
+          {isUserRoomOwner() && room.status === 'WAITING' && (
+            <Button 
+              variant="danger" 
+              onClick={handleDeleteRoom}
+              disabled={loading}
+              className="mb-2"
+            >
+              删除房间
+            </Button>
+          )}
+          
           {room.status === 'WAITING' ? (
             isUserInRoom() ? (
               <div className="d-flex justify-content-end">
@@ -316,7 +361,11 @@ const RoomDetail = ({ currentUser }) => {
             ) : (
               <Button 
                 variant="primary" 
-                onClick={() => setShowJoinModal(true)}
+                onClick={() => {
+                  // 自动选择下一个可用座位
+                  setSeatNumber(getNextAvailableSeat());
+                  setShowJoinModal(true);
+                }}
                 disabled={room.currentPlayers >= room.maxPlayers || loading}
               >
                 {room.currentPlayers >= room.maxPlayers ? '房间已满' : '加入房间'}
@@ -325,8 +374,27 @@ const RoomDetail = ({ currentUser }) => {
           ) : (
             <Button 
               variant="primary" 
-              as={Link} 
-              to={`/game/${roomId}`}
+              onClick={() => {
+                // 先尝试获取当前游戏，如果成功则导航到游戏页面
+                GameService.getCurrentGame(roomId)
+                  .then(response => {
+                    if (response.data && response.data.success) {
+                      navigate(`/game/${roomId}`);
+                    } else {
+                      setError('无法进入游戏: ' + (response.data ? response.data.message : '未知错误'));
+                    }
+                  })
+                  .catch(error => {
+                    const resMessage =
+                      (error.response &&
+                        error.response.data &&
+                        error.response.data.message) ||
+                      error.message ||
+                      error.toString();
+                    
+                    setError('无法进入游戏: ' + resMessage);
+                  });
+              }}
               disabled={!isUserInRoom()}
             >
               {isUserInRoom() ? '进入游戏' : '游戏进行中'}

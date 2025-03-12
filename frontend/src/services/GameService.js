@@ -168,6 +168,37 @@ class GameService {
       { headers: authHeader() }
     );
   }
+
+  /**
+   * 开始发牌
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回发牌结果的Promise
+   */
+  dealCards(gameId) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/deal`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 获取玩家手牌
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回玩家手牌的Promise
+   */
+  getMyCards(gameId) {
+    return axios.get(`${API_URL}/games/${gameId}/my-cards`, { headers: authHeader() });
+  }
+
+  /**
+   * 获取公共牌
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回公共牌的Promise
+   */
+  getCommunityCards(gameId) {
+    return axios.get(`${API_URL}/games/${gameId}/community-cards`, { headers: authHeader() });
+  }
 }
 
 export default new GameService(); 
