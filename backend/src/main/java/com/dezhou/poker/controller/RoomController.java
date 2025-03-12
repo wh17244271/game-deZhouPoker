@@ -257,9 +257,9 @@ public class RoomController {
                 }
             }
             
-            if (!allReady) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "有玩家尚未准备，无法开始游戏"));
-            }
+            // if (!allReady) {
+            //     return ResponseEntity.badRequest().body(new ApiResponse(false, "有玩家尚未准备，无法开始游戏"));
+            // }
             
             // 更新房间状态为游戏中
             roomService.updateStatus(roomId, "PLAYING");
