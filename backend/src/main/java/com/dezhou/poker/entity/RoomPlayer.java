@@ -43,6 +43,7 @@ public class RoomPlayer implements Serializable {
      * 复合主键
      */
     @EmbeddedId
+    @TableField(exist = false)
     private RoomPlayerId id;
 
     /**

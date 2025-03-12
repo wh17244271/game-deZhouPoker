@@ -115,7 +115,9 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         }
 
         // 删除房间玩家关系
-        boolean result = removeById(roomPlayer);
+        boolean result = remove(new LambdaQueryWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomId)
+                .eq(RoomPlayer::getUserId, userId));
 
         // 更新房间当前玩家数量
         Room room = roomService.getById(roomId);
