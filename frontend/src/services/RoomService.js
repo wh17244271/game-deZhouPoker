@@ -143,6 +143,45 @@ class RoomService {
       }
     );
   }
+
+  /**
+   * 准备游戏
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回准备结果的Promise
+   */
+  readyGame(roomId) {
+    return axios.post(
+      `${API_URL}/rooms/${roomId}/ready`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 取消准备
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回取消准备结果的Promise
+   */
+  cancelReady(roomId) {
+    return axios.post(
+      `${API_URL}/rooms/${roomId}/cancel-ready`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 开始游戏
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回开始游戏结果的Promise
+   */
+  startGame(roomId) {
+    return axios.post(
+      `${API_URL}/rooms/${roomId}/start`,
+      {},
+      { headers: authHeader() }
+    );
+  }
 }
 
 export default new RoomService(); 

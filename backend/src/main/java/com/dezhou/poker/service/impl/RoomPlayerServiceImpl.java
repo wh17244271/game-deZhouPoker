@@ -50,8 +50,8 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         }
 
         // 检查房间状态
-        if (!"ACTIVE".equals(room.getStatus())) {
-            throw new BusinessException("房间不处于活跃状态");
+        if (!"WAITING".equals(room.getStatus())) {
+            throw new BusinessException("房间不处于等待状态，无法加入");
         }
 
         // 检查房间是否已满
@@ -89,6 +89,11 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         roomPlayer.setDeleted(0);
 
         save(roomPlayer);
+
+        // 更新房间当前玩家数量
+        room.setCurrentPlayers(room.getCurrentPlayers() + 1);
+        roomService.updateById(room);
+
         return roomPlayer;
     }
 
@@ -111,6 +116,11 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
 
         // 删除房间玩家关系
         boolean result = removeById(roomPlayer);
+
+        // 更新房间当前玩家数量
+        Room room = roomService.getById(roomId);
+        room.setCurrentPlayers(Math.max(0, room.getCurrentPlayers() - 1));
+        roomService.updateById(room);
 
         // 检查房间是否还有玩家
         long playerCount = count(new LambdaQueryWrapper<RoomPlayer>()

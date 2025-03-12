@@ -36,6 +36,8 @@ const RoomDetail = ({ currentUser }) => {
   const [password, setPassword] = useState('');
   
   const [startGameLoading, setStartGameLoading] = useState(false);
+  const [readyLoading, setReadyLoading] = useState(false);
+  const [cancelReadyLoading, setCancelReadyLoading] = useState(false);
 
   // 加载房间详情
   const loadRoomDetails = () => {
@@ -165,32 +167,6 @@ const RoomDetail = ({ currentUser }) => {
       });
   };
 
-  // 开始游戏
-  const handleStartGame = () => {
-    setStartGameLoading(true);
-    
-    GameService.startNewGame(roomId)
-      .then(response => {
-        if (response.data && response.data.success) {
-          navigate(`/game/${roomId}`);
-        } else {
-          setError(response.data.message || '开始游戏失败');
-        }
-        setStartGameLoading(false);
-      })
-      .catch(error => {
-        const resMessage =
-          (error.response &&
-            error.response.data &&
-            error.response.data.message) ||
-          error.message ||
-          error.toString();
-        
-        setError(resMessage);
-        setStartGameLoading(false);
-      });
-  };
-
   // 检查当前用户是否已在房间中
   const isUserInRoom = () => {
     if (!user || !players || players.length === 0) return false;
@@ -204,6 +180,89 @@ const RoomDetail = ({ currentUser }) => {
       const playerId = player.user.id || player.user.userId || player.user.user_id;
       return playerId === userId;
     });
+  };
+
+  // 检查当前用户是否已准备
+  const isUserReady = () => {
+    if (!user || !players || players.length === 0) return false;
+    
+    const userId = user.userId || user.id || user.user_id;
+    if (!userId) return false;
+    
+    const currentPlayer = players.find(player => {
+      if (!player || !player.user) return false;
+      const playerId = player.user.id || player.user.userId || player.user.user_id;
+      return playerId === userId;
+    });
+    
+    return currentPlayer && currentPlayer.status === 'READY';
+  };
+
+  // 检查是否所有非房主玩家都已准备
+  const areAllPlayersReady = () => {
+    if (!room || !players || players.length === 0) return false;
+    
+    // 获取房主ID
+    const ownerId = room.owner ? (room.owner.id || room.owner.userId) : room.creatorId;
+    
+    // 检查所有非房主玩家是否都已准备
+    return players.every(player => {
+      if (!player || !player.user) return false;
+      const playerId = player.user.id || player.user.userId || player.user.user_id;
+      
+      // 如果是房主，不需要检查准备状态
+      if (playerId === ownerId) return true;
+      
+      return player.status === 'READY';
+    });
+  };
+
+  // 准备游戏
+  const handleReadyGame = () => {
+    setLoading(true);
+    
+    RoomService.readyGame(roomId)
+      .then(response => {
+        console.log('准备成功:', response);
+        loadRoomDetails();
+      })
+      .catch(error => {
+        const resMessage =
+          (error.response &&
+            error.response.data &&
+            error.response.data.message) ||
+          error.message ||
+          error.toString();
+        
+        setError(resMessage);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  // 取消准备
+  const handleCancelReady = () => {
+    setLoading(true);
+    
+    RoomService.cancelReady(roomId)
+      .then(response => {
+        console.log('取消准备成功:', response);
+        loadRoomDetails();
+      })
+      .catch(error => {
+        const resMessage =
+          (error.response &&
+            error.response.data &&
+            error.response.data.message) ||
+          error.message ||
+          error.toString();
+        
+        setError(resMessage);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   // 检查当前用户是否是房主
@@ -226,6 +285,41 @@ const RoomDetail = ({ currentUser }) => {
     const allSeats = Array.from({ length: room.maxPlayers }, (_, i) => i + 1);
     
     return allSeats.filter(seat => !takenSeats.includes(seat));
+  };
+
+  // 获取当前用户的状态
+  const getCurrentUserStatus = () => {
+    if (!user || !players || players.length === 0) return null;
+    
+    const userId = user.userId || user.id;
+    const currentPlayer = players.find(player => {
+      const playerId = player.user ? (player.user.id || player.user.userId) : player.userId;
+      return playerId === userId;
+    });
+    
+    return currentPlayer ? currentPlayer.status : null;
+  };
+
+  // 开始游戏
+  const handleStartGame = () => {
+    setStartGameLoading(true);
+    
+    RoomService.startGame(roomId)
+      .then(response => {
+        console.log('开始游戏成功:', response);
+        navigate(`/game/${roomId}`);
+      })
+      .catch(error => {
+        const resMessage =
+          (error.response &&
+            error.response.data &&
+            error.response.data.message) ||
+          error.message ||
+          error.toString();
+        
+        setError(resMessage);
+        setStartGameLoading(false);
+      });
   };
 
   if (loading) {
@@ -292,29 +386,56 @@ const RoomDetail = ({ currentUser }) => {
         <Col md={4} className="text-end">
           {room.status === 'WAITING' ? (
             isUserInRoom() ? (
-              <>
+              <div className="d-flex justify-content-end">
+                {/* 非房主玩家的准备/取消准备按钮 */}
+                {!isUserRoomOwner() && (
+                  isUserReady() ? (
+                    <Button 
+                      variant="warning" 
+                      onClick={handleCancelReady} 
+                      className="me-2"
+                      disabled={loading}
+                    >
+                      取消准备
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="success" 
+                      onClick={handleReadyGame} 
+                      className="me-2"
+                      disabled={loading}
+                    >
+                      准备
+                    </Button>
+                  )
+                )}
+                
+                {/* 离开房间按钮 */}
                 <Button 
                   variant="danger" 
                   onClick={handleLeaveRoom} 
                   className="me-2"
+                  disabled={loading}
                 >
                   离开房间
                 </Button>
-                {isUserRoomOwner() && room.currentPlayers >= room.minPlayers && (
+                
+                {/* 房主开始游戏按钮 - 只有当所有玩家都准备好时才启用 */}
+                {isUserRoomOwner() && room.currentPlayers >= room.minPlayers && areAllPlayersReady() && (
                   <Button 
-                    variant="success" 
+                    variant="primary" 
                     onClick={handleStartGame}
-                    disabled={startGameLoading}
+                    disabled={startGameLoading || loading}
                   >
                     {startGameLoading ? '开始中...' : '开始游戏'}
                   </Button>
                 )}
-              </>
+              </div>
             ) : (
               <Button 
                 variant="primary" 
                 onClick={() => setShowJoinModal(true)}
-                disabled={room.currentPlayers >= room.maxPlayers}
+                disabled={room.currentPlayers >= room.maxPlayers || loading}
               >
                 {room.currentPlayers >= room.maxPlayers ? '房间已满' : '加入房间'}
               </Button>
@@ -369,8 +490,14 @@ const RoomDetail = ({ currentUser }) => {
                       </td>
                       <td>{player.currentChips}</td>
                       <td>
-                        <Badge bg={player.status === 'WAITING' ? 'secondary' : 'success'}>
-                          {player.status === 'WAITING' ? '等待中' : '游戏中'}
+                        <Badge bg={
+                          player.status === 'WAITING' ? 'secondary' : 
+                          player.status === 'READY' ? 'info' : 'success'
+                        }>
+                          {
+                            player.status === 'WAITING' ? '等待中' : 
+                            player.status === 'READY' ? '已准备' : '游戏中'
+                          }
                         </Badge>
                       </td>
                     </tr>

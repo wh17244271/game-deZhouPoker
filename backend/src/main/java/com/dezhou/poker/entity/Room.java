@@ -132,6 +132,13 @@ public class Room implements Serializable {
     private Integer deleted;
 
     /**
+     * 房主信息（非数据库字段）
+     */
+    @Transient
+    @TableField(exist = false)
+    private User owner;
+
+    /**
      * 获取房间状态枚举
      */
     public RoomStatus getStatusEnum() {

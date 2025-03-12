@@ -24,7 +24,7 @@ public interface UserMapper extends BaseMapper<User> {
      * @param amount 筹码变动量
      * @return 影响行数
      */
-    @Update("UPDATE user SET current_chips = current_chips + #{amount} WHERE id = #{userId}")
+    @Update("UPDATE users SET current_chips = current_chips + #{amount} WHERE user_id = #{userId}")
     int updateChips(@Param("userId") Long userId, @Param("amount") BigDecimal amount);
 
     /**
@@ -34,6 +34,6 @@ public interface UserMapper extends BaseMapper<User> {
      * @param isWin 是否获胜
      * @return 影响行数
      */
-    @Update("UPDATE user SET total_games = total_games + 1, wins = wins + #{isWin} WHERE id = #{userId}")
+    @Update("UPDATE users SET total_games = total_games + 1, wins = wins + #{isWin} WHERE user_id = #{userId}")
     int updateGameStats(@Param("userId") Long userId, @Param("isWin") int isWin);
 } 
