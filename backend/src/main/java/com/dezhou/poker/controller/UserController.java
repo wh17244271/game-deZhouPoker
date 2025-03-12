@@ -142,7 +142,7 @@ public class UserController {
         ChipTransaction transaction = new ChipTransaction()
                 .setUserId(userId)
                 .setAmount(amount)
-                .setType(amount.compareTo(BigDecimal.ZERO) > 0 ? "DEPOSIT" : "WITHDRAW")
+                .setTransactionType(amount.compareTo(BigDecimal.ZERO) > 0 ? "DEPOSIT" : "WITHDRAW")
                 .setReason(reason)
                 .setOperatorId(currentUser.getId())
                 .setCreatedAt(LocalDateTime.now())

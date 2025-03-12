@@ -21,9 +21,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TableName("room")
+@TableName("rooms")
 @Entity
-@Table(name = "room")
+@Table(name = "rooms")
 public class Room implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -42,28 +42,29 @@ public class Room implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "room_id", type = IdType.AUTO)
+    @Column(name = "room_id")
     private Long id;
 
     /**
      * 房间名称
      */
-    @Column(name = "name")
-    @TableField("name")
+    @Column(name = "room_name")
+    @TableField("room_name")
     private String name;
 
     /**
      * 房间密码
      */
-    @Column(name = "password")
-    @TableField("password")
+    @Column(name = "room_password")
+    @TableField("room_password")
     private String password;
 
     /**
      * 创建者ID
      */
-    @Column(name = "creator_id")
-    @TableField("creator_id")
+    @Column(name = "owner_id")
+    @TableField("owner_id")
     private Long creatorId;
 
     /**
@@ -79,6 +80,13 @@ public class Room implements Serializable {
     @Column(name = "max_players")
     @TableField("max_players")
     private Integer maxPlayers;
+
+    /**
+     * 当前玩家数
+     */
+    @Column(name = "current_players")
+    @TableField("current_players")
+    private Integer currentPlayers;
 
     /**
      * 小盲注
@@ -102,13 +110,6 @@ public class Room implements Serializable {
     private String status;
 
     /**
-     * 当前玩家数
-     */
-    @Column(name = "current_players")
-    @TableField("current_players")
-    private Integer currentPlayers;
-
-    /**
      * 创建时间
      */
     @Column(name = "created_at")
@@ -116,10 +117,10 @@ public class Room implements Serializable {
     private LocalDateTime createdAt;
 
     /**
-     * 更新时间
+     * 更新时间 (兼容旧代码)
      */
-    @Column(name = "updated_at")
-    @TableField("updated_at")
+    @Transient
+    @TableField(exist = false)
     private LocalDateTime updatedAt;
 
     /**

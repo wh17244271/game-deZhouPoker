@@ -21,9 +21,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TableName("user")
+@TableName("users")
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -33,7 +33,8 @@ public class User implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "user_id", type = IdType.AUTO)
+    @Column(name = "user_id")
     private Long id;
 
     /**

@@ -18,9 +18,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TableName("game_action")
+@TableName("game_actions")
 @Entity
-@Table(name = "game_action")
+@Table(name = "game_actions")
 public class GameAction implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -30,7 +30,8 @@ public class GameAction implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "action_id", type = IdType.AUTO)
+    @Column(name = "action_id")
     private Long id;
 
     /**
@@ -100,15 +101,15 @@ public class GameAction implements Serializable {
     /**
      * 游戏
      */
-    @TableField(exist = false)
     @Transient
+    @TableField(exist = false)
     private GameHistory game;
 
     /**
      * 用户
      */
-    @TableField(exist = false)
     @Transient
+    @TableField(exist = false)
     private User user;
 
     /**

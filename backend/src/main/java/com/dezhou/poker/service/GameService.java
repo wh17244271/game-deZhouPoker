@@ -258,7 +258,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         ChipTransaction chipTransaction = new ChipTransaction();
         chipTransaction.setUserId(userId);
         chipTransaction.setAmount(finalChips);
-        chipTransaction.setType("WIN");
+        chipTransaction.setTransactionType("WIN");
         chipTransaction.setGameId(gameId);
         chipTransaction.setCreatedAt(LocalDateTime.now());
         chipTransactionMapper.insert(chipTransaction);

@@ -21,8 +21,8 @@ public interface GameActionMapper extends BaseMapper<GameAction> {
      * @param gameId 游戏ID
      * @return 动作列表
      */
-    @Select("SELECT ga.*, u.* FROM game_action ga " +
-            "LEFT JOIN user u ON ga.user_id = u.id " +
+    @Select("SELECT ga.*, u.* FROM game_actions ga " +
+            "LEFT JOIN users u ON ga.user_id = u.user_id " +
             "WHERE ga.game_id = #{gameId} AND ga.deleted = 0 " +
             "ORDER BY ga.action_time ASC")
     List<GameAction> selectByGameId(@Param("gameId") Long gameId);
@@ -34,8 +34,8 @@ public interface GameActionMapper extends BaseMapper<GameAction> {
      * @param round  轮次
      * @return 动作列表
      */
-    @Select("SELECT ga.*, u.* FROM game_action ga " +
-            "LEFT JOIN user u ON ga.user_id = u.id " +
+    @Select("SELECT ga.*, u.* FROM game_actions ga " +
+            "LEFT JOIN users u ON ga.user_id = u.user_id " +
             "WHERE ga.game_id = #{gameId} AND ga.round = #{round} AND ga.deleted = 0 " +
             "ORDER BY ga.action_time ASC")
     List<GameAction> selectByGameIdAndRound(@Param("gameId") Long gameId, @Param("round") String round);
@@ -46,7 +46,7 @@ public interface GameActionMapper extends BaseMapper<GameAction> {
      * @param gameId 游戏ID
      * @return 奖池大小
      */
-    @Select("SELECT COALESCE(SUM(amount), 0) FROM game_action " +
+    @Select("SELECT COALESCE(SUM(amount), 0) FROM game_actions " +
             "WHERE game_id = #{gameId} AND deleted = 0")
     BigDecimal calculatePotSize(@Param("gameId") Long gameId);
 } 

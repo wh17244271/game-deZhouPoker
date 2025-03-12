@@ -21,9 +21,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TableName("room_player")
+@TableName("room_players")
 @Entity
-@Table(name = "room_player")
+@Table(name = "room_players")
 public class RoomPlayer implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -32,33 +32,30 @@ public class RoomPlayer implements Serializable {
      * 玩家状态枚举
      */
     public enum PlayerStatus {
-        WAITING,    // 等待中
-        READY,      // 准备就绪
-        PLAYING,    // 游戏中
-        FOLDED,     // 已弃牌
-        ALL_IN,     // 全押
-        OFFLINE     // 离线
+        ACTIVE,     // 活跃
+        FOLDED,     // 弃牌
+        ALL_IN,     // 全下
+        WAITING,    // 等待
+        PLAYING     // 游戏中 (兼容旧代码)
     }
 
     /**
-     * 玩家ID
+     * 复合主键
      */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
-    private Long id;
+    @EmbeddedId
+    private RoomPlayerId id;
 
     /**
      * 房间ID
      */
-    @Column(name = "room_id")
+    @Column(name = "room_id", insertable = false, updatable = false)
     @TableField("room_id")
     private Long roomId;
 
     /**
      * 用户ID
      */
-    @Column(name = "user_id")
+    @Column(name = "user_id", insertable = false, updatable = false)
     @TableField("user_id")
     private Long userId;
 
@@ -84,32 +81,45 @@ public class RoomPlayer implements Serializable {
     private String status;
 
     /**
-     * 手牌
+     * 最后动作
      */
-    @Column(name = "hole_cards")
-    @TableField("hole_cards")
+    @Column(name = "last_action")
+    @TableField("last_action")
+    private String lastAction;
+
+    /**
+     * 最后下注
+     */
+    @Column(name = "last_bet")
+    @TableField("last_bet")
+    private BigDecimal lastBet;
+
+    /**
+     * 手牌 (兼容旧代码)
+     */
+    @Transient
+    @TableField(exist = false)
     private String holeCards;
 
     /**
-     * 加入时间
+     * 加入时间 (兼容旧代码)
      */
-    @Column(name = "joined_at")
-    @TableField("joined_at")
+    @Transient
+    @TableField(exist = false)
     private LocalDateTime joinedAt;
 
     /**
-     * 更新时间
+     * 更新时间 (兼容旧代码)
      */
-    @Column(name = "updated_at")
-    @TableField("updated_at")
+    @Transient
+    @TableField(exist = false)
     private LocalDateTime updatedAt;
 
     /**
-     * 逻辑删除标志
+     * 逻辑删除标志 (兼容旧代码)
      */
-    @Column(name = "deleted")
-    @TableLogic
-    @TableField("deleted")
+    @Transient
+    @TableField(exist = false)
     private Integer deleted;
 
     /**
@@ -131,5 +141,50 @@ public class RoomPlayer implements Serializable {
      */
     public void setStatusEnum(PlayerStatus status) {
         this.status = status.name();
+    }
+    
+    /**
+     * 设置加入时间 (兼容旧代码)
+     */
+    public RoomPlayer setJoinedAt(LocalDateTime joinedAt) {
+        this.joinedAt = joinedAt;
+        return this;
+    }
+    
+    /**
+     * 获取加入时间 (兼容旧代码)
+     */
+    public LocalDateTime getJoinedAt() {
+        return this.joinedAt;
+    }
+    
+    /**
+     * 设置更新时间 (兼容旧代码)
+     */
+    public RoomPlayer setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+        return this;
+    }
+    
+    /**
+     * 获取更新时间 (兼容旧代码)
+     */
+    public LocalDateTime getUpdatedAt() {
+        return this.updatedAt;
+    }
+    
+    /**
+     * 设置逻辑删除标志 (兼容旧代码)
+     */
+    public RoomPlayer setDeleted(Integer deleted) {
+        this.deleted = deleted;
+        return this;
+    }
+    
+    /**
+     * 获取逻辑删除标志 (兼容旧代码)
+     */
+    public Integer getDeleted() {
+        return this.deleted;
     }
 } 

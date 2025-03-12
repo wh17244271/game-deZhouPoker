@@ -1,6 +1,7 @@
 package com.dezhou.poker.repository;
 
 import com.dezhou.poker.entity.RoomPlayer;
+import com.dezhou.poker.entity.RoomPlayerId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +11,7 @@ import java.util.List;
  * 房间玩家仓库接口
  */
 @Repository
-public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, Long> {
+public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, RoomPlayerId> {
 
     /**
      * 根据房间ID查找房间玩家

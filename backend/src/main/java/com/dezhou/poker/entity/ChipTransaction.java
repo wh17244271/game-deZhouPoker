@@ -18,9 +18,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TableName("chip_transaction")
+@TableName("chip_transactions")
 @Entity
-@Table(name = "chip_transaction")
+@Table(name = "chip_transactions")
 public class ChipTransaction implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -29,11 +29,12 @@ public class ChipTransaction implements Serializable {
      * 交易类型枚举
      */
     public enum TransactionType {
+        BUY_IN,     // 买入
+        CASH_OUT,   // 提现
         WIN,        // 游戏获胜
         LOSE,       // 游戏失败
-        DEPOSIT,    // 充值
-        WITHDRAW,   // 提现
-        TRANSFER    // 转账
+        DEPOSIT,    // 充值 (兼容旧代码)
+        WITHDRAW    // 提现 (兼容旧代码)
     }
 
     /**
@@ -41,7 +42,8 @@ public class ChipTransaction implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "transaction_id", type = IdType.AUTO)
+    @Column(name = "transaction_id")
     private Long id;
 
     /**
@@ -68,33 +70,33 @@ public class ChipTransaction implements Serializable {
     /**
      * 交易类型
      */
-    @Column(name = "type")
-    @TableField("type")
+    @Column(name = "transaction_type")
+    @TableField("transaction_type")
+    private String transactionType;
+
+    /**
+     * 交易类型 (兼容旧代码)
+     */
+    @Transient
+    @TableField(exist = false)
     private String type;
 
     /**
      * 交易时间
+     */
+    @Column(name = "transaction_time")
+    @TableField("transaction_time")
+    private LocalDateTime transactionTime;
+
+    /**
+     * 创建时间
      */
     @Column(name = "created_at")
     @TableField("created_at")
     private LocalDateTime createdAt;
 
     /**
-     * 备注
-     */
-    @Column(name = "remark")
-    @TableField("remark")
-    private String remark;
-
-    /**
-     * 操作者ID
-     */
-    @Column(name = "operator_id")
-    @TableField("operator_id")
-    private Long operatorId;
-
-    /**
-     * 创建时间
+     * 更新时间
      */
     @Column(name = "updated_at")
     @TableField("updated_at")
@@ -109,35 +111,66 @@ public class ChipTransaction implements Serializable {
     private Integer deleted;
 
     /**
+     * 备注 (兼容旧代码)
+     */
+    @Transient
+    @TableField(exist = false)
+    private String remark;
+
+    /**
+     * 操作者ID (兼容旧代码)
+     */
+    @Transient
+    @TableField(exist = false)
+    private Long operatorId;
+
+    /**
      * 用户
      */
-    @TableField(exist = false)
     @Transient
+    @TableField(exist = false)
     private User user;
 
     /**
      * 游戏
      */
-    @TableField(exist = false)
     @Transient
+    @TableField(exist = false)
     private GameHistory game;
 
     /**
      * 获取交易类型枚举
      */
     public TransactionType getTypeEnum() {
-        return TransactionType.valueOf(type);
+        return TransactionType.valueOf(transactionType);
     }
 
     /**
      * 设置交易类型枚举
      */
     public void setTypeEnum(TransactionType type) {
+        this.transactionType = type.name();
         this.type = type.name();
     }
 
     /**
-     * 设置备注
+     * 设置交易类型 (兼容旧代码)
+     */
+    public ChipTransaction setType(String type) {
+        this.type = type;
+        this.transactionType = type;
+        return this;
+    }
+
+    /**
+     * 获取交易类型 (兼容旧代码)
+     */
+    public String getType() {
+        return this.transactionType;
+    }
+
+    /**
+     * 设置备注 (兼容旧代码)
      */
     public ChipTransaction setReason(String reason) {
         this.remark = reason;
@@ -145,9 +178,24 @@ public class ChipTransaction implements Serializable {
     }
 
     /**
-     * 获取备注
+     * 获取备注 (兼容旧代码)
      */
     public String getReason() {
         return this.remark;
+    }
+
+    /**
+     * 设置操作者ID (兼容旧代码)
+     */
+    public ChipTransaction setOperatorId(Long operatorId) {
+        this.operatorId = operatorId;
+        return this;
+    }
+
+    /**
+     * 获取操作者ID (兼容旧代码)
+     */
+    public Long getOperatorId() {
+        return this.operatorId;
     }
 } 

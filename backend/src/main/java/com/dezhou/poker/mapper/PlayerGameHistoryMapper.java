@@ -21,7 +21,7 @@ public interface PlayerGameHistoryMapper extends BaseMapper<PlayerGameHistory> {
      * @return 玩家游戏历史列表
      */
     @Select("SELECT pgh.*, u.* FROM player_game_history pgh " +
-            "LEFT JOIN user u ON pgh.user_id = u.id " +
+            "LEFT JOIN users u ON pgh.user_id = u.user_id " +
             "WHERE pgh.game_id = #{gameId} AND pgh.deleted = 0")
     List<PlayerGameHistory> selectByGameId(@Param("gameId") Long gameId);
 } 

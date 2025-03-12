@@ -1,6 +1,7 @@
 package com.dezhou.poker.repository;
 
 import com.dezhou.poker.entity.PlayerGameHistory;
+import com.dezhou.poker.entity.PlayerGameHistoryId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,7 +11,7 @@ import java.util.List;
  * 玩家游戏历史记录仓库接口
  */
 @Repository
-public interface PlayerGameHistoryRepository extends JpaRepository<PlayerGameHistory, Long> {
+public interface PlayerGameHistoryRepository extends JpaRepository<PlayerGameHistory, PlayerGameHistoryId> {
 
     /**
      * 根据游戏ID查找玩家游戏历史记录

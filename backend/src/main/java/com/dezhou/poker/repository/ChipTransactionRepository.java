@@ -35,10 +35,10 @@ public interface ChipTransactionRepository extends JpaRepository<ChipTransaction
      * 根据用户ID和交易类型查找筹码变动记录
      *
      * @param userId 用户ID
-     * @param type   交易类型
+     * @param transactionType 交易类型
      * @return 筹码变动记录列表
      */
-    List<ChipTransaction> findByUserIdAndType(Long userId, String type);
+    List<ChipTransaction> findByUserIdAndTransactionType(Long userId, String transactionType);
 
     /**
      * 根据用户ID和交易时间范围查找筹码变动记录
@@ -56,7 +56,7 @@ public interface ChipTransactionRepository extends JpaRepository<ChipTransaction
      * @param userId 用户ID
      * @return 总赢钱金额
      */
-    @Query("SELECT SUM(t.amount) FROM ChipTransaction t WHERE t.userId = ?1 AND t.type = 'WIN'")
+    @Query("SELECT SUM(t.amount) FROM ChipTransaction t WHERE t.userId = ?1 AND t.transactionType = 'WIN'")
     BigDecimal calculateTotalWinnings(Long userId);
 
     /**
@@ -65,6 +65,6 @@ public interface ChipTransactionRepository extends JpaRepository<ChipTransaction
      * @param userId 用户ID
      * @return 总输钱金额
      */
-    @Query("SELECT SUM(ABS(t.amount)) FROM ChipTransaction t WHERE t.userId = ?1 AND t.type = 'LOSE'")
+    @Query("SELECT SUM(ABS(t.amount)) FROM ChipTransaction t WHERE t.userId = ?1 AND t.transactionType = 'LOSE'")
     BigDecimal calculateTotalLosses(Long userId);
 }

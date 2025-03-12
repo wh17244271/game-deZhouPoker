@@ -29,7 +29,6 @@ public class PlayerGameHistory implements Serializable {
      * 复合主键
      */
     @EmbeddedId
-    @TableId(type = IdType.NONE)
     private PlayerGameHistoryId id;
 
     /**
@@ -75,11 +74,25 @@ public class PlayerGameHistory implements Serializable {
     private BigDecimal finalChips;
 
     /**
+     * 手牌
+     */
+    @Column(name = "hole_cards")
+    @TableField("hole_cards")
+    private String holeCards;
+
+    /**
      * 最终牌型
      */
     @Column(name = "final_hand_type")
     @TableField("final_hand_type")
     private String finalHandType;
+
+    /**
+     * 位置
+     */
+    @Column(name = "position")
+    @TableField("position")
+    private Integer position;
 
     /**
      * 是否获胜

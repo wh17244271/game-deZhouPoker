@@ -17,9 +17,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@TableName("allin_vote")
+@TableName("allin_votes")
 @Entity
-@Table(name = "allin_vote")
+@Table(name = "allin_votes")
 public class AllinVote implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -29,7 +29,8 @@ public class AllinVote implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "vote_id", type = IdType.AUTO)
+    @Column(name = "vote_id")
     private Long id;
 
     /**

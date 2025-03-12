@@ -31,7 +31,7 @@ public class ChipTransactionServiceImpl extends ServiceImpl<ChipTransactionMappe
         ChipTransaction transaction = new ChipTransaction()
                 .setUserId(userId)
                 .setAmount(amount)
-                .setType(type)
+                .setTransactionType(type)
                 .setReason(reason)
                 .setOperatorId(operatorId)
                 .setCreatedAt(LocalDateTime.now());

@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+
+# 后端启动，我自行启动
+# 关于application.properties中，mysql配置无需更改，我本地就是10.0.16.112
+# 前端帮我启动

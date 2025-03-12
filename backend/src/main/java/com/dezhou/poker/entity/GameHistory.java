@@ -30,8 +30,9 @@ public class GameHistory implements Serializable {
      */
     public enum GameStatus {
         IN_PROGRESS,    // 进行中
-        FINISHED,       // 已结束
-        CANCELLED       // 已取消
+        COMPLETED,      // 已完成
+        CANCELLED,      // 已取消
+        FINISHED        // 已结束 (兼容旧代码)
     }
 
     /**
@@ -39,7 +40,8 @@ public class GameHistory implements Serializable {
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "game_id", type = IdType.AUTO)
+    @Column(name = "game_id")
     private Long id;
 
     /**
@@ -80,8 +82,15 @@ public class GameHistory implements Serializable {
     /**
      * 底池
      */
-    @Column(name = "pot")
-    @TableField("pot")
+    @Column(name = "pot_size")
+    @TableField("pot_size")
+    private BigDecimal potSize;
+
+    /**
+     * 底池 (兼容旧代码)
+     */
+    @Transient
+    @TableField(exist = false)
     private BigDecimal pot;
 
     /**
@@ -97,13 +106,6 @@ public class GameHistory implements Serializable {
     @Column(name = "community_cards")
     @TableField("community_cards")
     private String communityCards;
-
-    /**
-     * 奖池大小
-     */
-    @Column(name = "pot_size")
-    @TableField("pot_size")
-    private BigDecimal potSize;
 
     /**
      * 开始时间
@@ -196,5 +198,21 @@ public class GameHistory implements Serializable {
     public void setRoom(Room room) {
         this.room = room;
         this.roomId = room.getId();
+    }
+
+    /**
+     * 设置底池 (兼容旧代码)
+     */
+    public GameHistory setPot(BigDecimal pot) {
+        this.pot = pot;
+        this.potSize = pot;
+        return this;
+    }
+
+    /**
+     * 获取底池 (兼容旧代码)
+     */
+    public BigDecimal getPot() {
+        return this.potSize;
     }
 } 

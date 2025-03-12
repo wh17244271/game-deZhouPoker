@@ -10,25 +10,20 @@ import javax.persistence.Embeddable;
 import java.io.Serializable;
 
 /**
- * 玩家游戏历史复合主键
+ * 房间玩家关系复合主键
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Embeddable
-public class PlayerGameHistoryId implements Serializable {
+public class RoomPlayerId implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 游戏ID
-     */
-    @Column(name = "game_id")
-    @TableField("game_id")
-    private Long gameId;
+    @Column(name = "room_id")
+    @TableField("room_id")
+    private Long roomId;
 
-    /**
-     * 用户ID
-     */
     @Column(name = "user_id")
     @TableField("user_id")
     private Long userId;

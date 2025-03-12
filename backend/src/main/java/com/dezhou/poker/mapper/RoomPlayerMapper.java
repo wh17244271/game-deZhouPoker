@@ -23,8 +23,8 @@ public interface RoomPlayerMapper extends BaseMapper<RoomPlayer> {
      * @param roomId 房间ID
      * @return 玩家列表
      */
-    @Select("SELECT rp.*, u.* FROM room_player rp " +
-            "LEFT JOIN user u ON rp.user_id = u.id " +
+    @Select("SELECT rp.*, u.* FROM room_players rp " +
+            "LEFT JOIN users u ON rp.user_id = u.user_id " +
             "WHERE rp.room_id = #{roomId} AND rp.deleted = 0")
     List<RoomPlayer> selectByRoomId(@Param("roomId") Long roomId);
 
@@ -34,7 +34,7 @@ public interface RoomPlayerMapper extends BaseMapper<RoomPlayer> {
      * @param userId 用户ID
      * @return 房间玩家关系列表
      */
-    @Select("SELECT * FROM room_player WHERE user_id = #{userId} AND deleted = 0")
+    @Select("SELECT * FROM room_players WHERE user_id = #{userId} AND deleted = 0")
     List<RoomPlayer> selectByUserId(@Param("userId") Long userId);
 
     /**
@@ -44,6 +44,6 @@ public interface RoomPlayerMapper extends BaseMapper<RoomPlayer> {
      * @param seatNumber 座位号
      * @return 房间玩家关系
      */
-    @Select("SELECT * FROM room_player WHERE room_id = #{roomId} AND seat_number = #{seatNumber} AND deleted = 0")
+    @Select("SELECT * FROM room_players WHERE room_id = #{roomId} AND seat_number = #{seatNumber} AND deleted = 0")
     RoomPlayer selectBySeat(@Param("roomId") Long roomId, @Param("seatNumber") Integer seatNumber);
 } 

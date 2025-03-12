@@ -20,8 +20,8 @@ public interface ChipTransactionMapper extends BaseMapper<ChipTransaction> {
      * @param userId 用户ID
      * @return 交易记录列表
      */
-    @Select("SELECT ct.*, u.* FROM chip_transaction ct " +
-            "LEFT JOIN user u ON ct.user_id = u.id " +
+    @Select("SELECT ct.*, u.* FROM chip_transactions ct " +
+            "LEFT JOIN users u ON ct.user_id = u.user_id " +
             "WHERE ct.user_id = #{userId} AND ct.deleted = 0 " +
             "ORDER BY ct.transaction_time DESC")
     List<ChipTransaction> selectByUserId(@Param("userId") Long userId);
