@@ -28,14 +28,20 @@ function App() {
   useEffect(() => {
     const user = AuthService.getCurrentUser();
     if (user) {
+      console.log('App: Setting current user from localStorage:', user);
       setCurrentUser(user);
+    } else {
+      console.log('App: No user found in localStorage');
     }
     setLoading(false);
   }, []);
 
   const logOut = () => {
+    console.log('App: Logging out user');
     AuthService.logout();
     setCurrentUser(null);
+    // 重定向到登录页面
+    window.location.href = '/login';
   };
 
   if (loading) {
@@ -64,7 +70,7 @@ function App() {
               path="/rooms/:roomId" 
               element={
                 <PrivateRoute currentUser={currentUser}>
-                  <RoomDetail />
+                  <RoomDetail currentUser={currentUser} />
                 </PrivateRoute>
               } 
             />

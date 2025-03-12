@@ -54,8 +54,25 @@ class AuthService {
     if (!userStr) return null;
     
     try {
-      return JSON.parse(userStr);
+      const user = JSON.parse(userStr);
+      // 确保用户对象包含必要的字段
+      if (!user) return null;
+      
+      // 如果没有 username，尝试从其他字段获取
+      if (!user.username && user.user && user.user.username) {
+        user.username = user.user.username;
+      }
+      
+      // 如果没有 userId，尝试从其他字段获取
+      if (!user.userId && user.id) {
+        user.userId = user.id;
+      } else if (!user.userId && user.user && user.user.id) {
+        user.userId = user.user.id;
+      }
+      
+      return user;
     } catch (e) {
+      console.error('Error parsing user from localStorage:', e);
       return null;
     }
   }

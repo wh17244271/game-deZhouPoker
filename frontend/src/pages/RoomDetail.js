@@ -5,10 +5,24 @@ import RoomService from '../services/RoomService';
 import GameService from '../services/GameService';
 import AuthService from '../services/AuthService';
 
-const RoomDetail = () => {
+const RoomDetail = ({ currentUser }) => {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const currentUser = AuthService.getCurrentUser();
+  
+  // 添加更多调试信息
+  console.log('Props currentUser:', currentUser);
+  const storedUser = AuthService.getCurrentUser();
+  console.log('Stored user:', storedUser);
+  
+  // 确保用户对象有效
+  const [user, setUser] = useState({ username: '游客', userId: null, currentChips: 0 });
+  
+  // 在组件挂载时设置用户
+  useEffect(() => {
+    const validUser = currentUser || storedUser || { username: '游客', userId: null, currentChips: 0 };
+    console.log('Setting user to:', validUser);
+    setUser(validUser);
+  }, [currentUser, storedUser]);
   
   const [room, setRoom] = useState(null);
   const [players, setPlayers] = useState([]);
@@ -34,8 +48,11 @@ const RoomDetail = () => {
           const roomData = response.data.data[0];
           const playersData = response.data.data[1];
           
+          console.log('Room data:', roomData);
+          console.log('Players data:', playersData);
+          
           setRoom(roomData);
-          setPlayers(playersData);
+          setPlayers(playersData || []);
         } else {
           setError('获取房间详情失败');
         }
@@ -56,6 +73,9 @@ const RoomDetail = () => {
 
   // 组件挂载时加载房间详情
   useEffect(() => {
+    // 添加调试信息
+    console.log('Current user object:', user);
+    
     loadRoomDetails();
     
     // 每10秒刷新一次房间详情
@@ -70,6 +90,12 @@ const RoomDetail = () => {
   const handleJoinRoom = (e) => {
     e.preventDefault();
     setJoinError('');
+    
+    // 检查用户是否登录
+    if (!user || !user.userId) {
+      setJoinError('请先登录');
+      return;
+    }
     
     // 表单验证
     if (room && room.password && !password) {
@@ -87,7 +113,7 @@ const RoomDetail = () => {
       return;
     }
     
-    if (currentUser && currentUser.currentChips < buyIn) {
+    if (user && user.currentChips < buyIn) {
       setJoinError('您的筹码不足');
       return;
     }
@@ -167,12 +193,29 @@ const RoomDetail = () => {
 
   // 检查当前用户是否已在房间中
   const isUserInRoom = () => {
-    return players.some(player => player.user.id === currentUser.userId);
+    if (!user || !players || players.length === 0) return false;
+    
+    // 检查用户ID可能存在的不同属性名
+    const userId = user.userId || user.id || user.user_id;
+    if (!userId) return false;
+    
+    return players.some(player => {
+      if (!player || !player.user) return false;
+      const playerId = player.user.id || player.user.userId || player.user.user_id;
+      return playerId === userId;
+    });
   };
 
   // 检查当前用户是否是房主
   const isUserRoomOwner = () => {
-    return room && room.owner.id === currentUser.userId;
+    if (!room || !room.owner || !user) return false;
+    
+    // 检查用户ID可能存在的不同属性名
+    const userId = user.userId || user.id || user.user_id;
+    if (!userId) return false;
+    
+    const ownerId = room.owner.id || room.owner.userId || room.owner.user_id;
+    return ownerId === userId;
   };
 
   // 获取可用座位列表
@@ -220,6 +263,9 @@ const RoomDetail = () => {
       </Container>
     );
   }
+
+  // 确保 room.owner 存在
+  const owner = room.owner || { username: '未知', id: null };
 
   return (
     <Container>
@@ -302,26 +348,34 @@ const RoomDetail = () => {
                 </tr>
               </thead>
               <tbody>
-                {players.map(player => (
-                  <tr key={player.id.userId}>
-                    <td>{player.seatNumber}</td>
-                    <td>
-                      {player.user.username}
-                      {room.owner.id === player.user.id && (
-                        <Badge bg="warning" className="ms-1">房主</Badge>
-                      )}
-                      {player.user.id === currentUser.userId && (
-                        <Badge bg="info" className="ms-1">你</Badge>
-                      )}
-                    </td>
-                    <td>{player.currentChips}</td>
-                    <td>
-                      <Badge bg={player.status === 'WAITING' ? 'secondary' : 'success'}>
-                        {player.status === 'WAITING' ? '等待中' : '游戏中'}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {players.map(player => {
+                  // 确保 player 和 player.user 存在
+                  if (!player) return null;
+                  const playerUser = player.user || { username: '未知用户', id: null };
+                  
+                  return (
+                    <tr key={`player-${player.seatNumber}-${playerUser.username}`}>
+                      <td>{player.seatNumber}</td>
+                      <td>
+                        {playerUser.username}
+                        {owner && playerUser && owner.id === playerUser.id && (
+                          <Badge bg="warning" className="ms-1">房主</Badge>
+                        )}
+                        {user && playerUser && 
+                          ((playerUser.id === (user.userId || user.id)) || 
+                           (player.userId === (user.userId || user.id))) && (
+                          <Badge bg="info" className="ms-1">你</Badge>
+                        )}
+                      </td>
+                      <td>{player.currentChips}</td>
+                      <td>
+                        <Badge bg={player.status === 'WAITING' ? 'secondary' : 'success'}>
+                          {player.status === 'WAITING' ? '等待中' : '游戏中'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </Table>
           )}
@@ -335,7 +389,7 @@ const RoomDetail = () => {
             <Card.Body>
               <Row>
                 <Col md={6}>
-                  <p><strong>房主:</strong> {room.owner.username}</p>
+                  <p><strong>房主:</strong> {owner.username}</p>
                   <p><strong>最小玩家数:</strong> {room.minPlayers}</p>
                   <p><strong>最大玩家数:</strong> {room.maxPlayers}</p>
                 </Col>
@@ -391,10 +445,10 @@ const RoomDetail = () => {
                 value={buyIn}
                 onChange={(e) => setBuyIn(Number(e.target.value))}
                 min="1"
-                max={currentUser.currentChips}
+                max={user && user.currentChips ? user.currentChips : 1000}
               />
               <Form.Text className="text-muted">
-                您当前拥有 {currentUser.currentChips} 筹码
+                您当前拥有 {user && user.currentChips ? user.currentChips : 0} 筹码
               </Form.Text>
             </Form.Group>
 

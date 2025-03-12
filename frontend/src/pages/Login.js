@@ -70,21 +70,38 @@ const Login = ({ setCurrentUser }) => {
       return;
     }
 
+    console.log('Login: Attempting to login with username:', username);
+    
     AuthService.login(username, password)
       .then(response => {
+        console.log('Login: Login successful, response:', response);
+        
+        // 确保响应中包含必要的字段
+        if (!response.username) {
+          console.warn('Login: Response missing username, adding it');
+          response.username = username;
+        }
+        
+        if (!response.userId && response.id) {
+          console.warn('Login: Response missing userId, using id instead');
+          response.userId = response.id;
+        }
+        
         setCurrentUser(response);
         navigate('/rooms');
       })
       .catch(error => {
+        console.error('Login: Login failed', error);
+        
         const resMessage =
           (error.response &&
             error.response.data &&
             error.response.data.message) ||
           error.message ||
           error.toString();
-
-        setLoading(false);
+        
         setMessage(resMessage);
+        setLoading(false);
       });
   };
 

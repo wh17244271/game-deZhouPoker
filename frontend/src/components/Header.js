@@ -19,7 +19,7 @@ const Header = ({ currentUser, logOut }) => {
           </Nav>
           <Nav>
             {currentUser ? (
-              <NavDropdown title={`欢迎, ${currentUser.username}`} id="basic-nav-dropdown">
+              <NavDropdown title={`欢迎, ${currentUser.username || '用户'}`} id="basic-nav-dropdown">
                 <NavDropdown.Item as={Link} to="/profile">个人资料</NavDropdown.Item>
                 <NavDropdown.Divider />
                 <NavDropdown.Item onClick={logOut}>退出登录</NavDropdown.Item>
