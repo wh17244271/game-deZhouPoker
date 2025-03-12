@@ -85,7 +85,6 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         roomPlayer.setCurrentChips(buyIn);
         roomPlayer.setStatus("WAITING");
         roomPlayer.setJoinedAt(LocalDateTime.now());
-        roomPlayer.setUpdatedAt(LocalDateTime.now());
         roomPlayer.setDeleted(0);
 
         save(roomPlayer);
@@ -151,8 +150,7 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         return update(new LambdaUpdateWrapper<RoomPlayer>()
                 .eq(RoomPlayer::getRoomId, roomId)
                 .eq(RoomPlayer::getUserId, userId)
-                .set(RoomPlayer::getStatus, status)
-                .set(RoomPlayer::getUpdatedAt, LocalDateTime.now()));
+                .set(RoomPlayer::getStatus, status));
     }
 
     @Override
@@ -174,7 +172,6 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         return update(new LambdaUpdateWrapper<RoomPlayer>()
                 .eq(RoomPlayer::getRoomId, roomId)
                 .eq(RoomPlayer::getUserId, userId)
-                .set(RoomPlayer::getCurrentChips, newChips)
-                .set(RoomPlayer::getUpdatedAt, LocalDateTime.now()));
+                .set(RoomPlayer::getCurrentChips, newChips));
     }
 } 

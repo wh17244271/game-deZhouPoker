@@ -109,12 +109,7 @@ public class RoomPlayer implements Serializable {
     @TableField(exist = false)
     private LocalDateTime joinedAt;
 
-    /**
-     * 更新时间 (兼容旧代码)
-     */
-    @Transient
-    @TableField(exist = false)
-    private LocalDateTime updatedAt;
+ 
 
     /**
      * 逻辑删除标志 (兼容旧代码)
@@ -159,21 +154,9 @@ public class RoomPlayer implements Serializable {
         return this.joinedAt;
     }
     
-    /**
-     * 设置更新时间 (兼容旧代码)
-     */
-    public RoomPlayer setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-        return this;
-    }
+  
     
-    /**
-     * 获取更新时间 (兼容旧代码)
-     */
-    public LocalDateTime getUpdatedAt() {
-        return this.updatedAt;
-    }
-    
+ 
     /**
      * 设置逻辑删除标志 (兼容旧代码)
      */
