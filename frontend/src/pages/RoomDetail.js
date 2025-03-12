@@ -376,15 +376,44 @@ const RoomDetail = ({ currentUser }) => {
               variant="primary" 
               onClick={() => {
                 // 先尝试获取当前游戏，如果成功则导航到游戏页面
+                setLoading(true);
                 GameService.getCurrentGame(roomId)
                   .then(response => {
+                    setLoading(false);
                     if (response.data && response.data.success) {
+                      console.log('获取游戏成功:', response.data);
                       navigate(`/game/${roomId}`);
                     } else {
-                      setError('无法进入游戏: ' + (response.data ? response.data.message : '未知错误'));
+                      // 如果游戏不存在，但房间状态是PLAYING，尝试刷新房间信息
+                      if (room.status === 'PLAYING') {
+                        loadRoomDetails();
+                        setTimeout(() => {
+                          GameService.getCurrentGame(roomId)
+                            .then(retryResponse => {
+                              if (retryResponse.data && retryResponse.data.success) {
+                                navigate(`/game/${roomId}`);
+                              } else {
+                                setError('无法进入游戏: ' + (retryResponse.data ? retryResponse.data.message : '未知错误'));
+                              }
+                            })
+                            .catch(error => {
+                              const resMessage =
+                                (error.response &&
+                                  error.response.data &&
+                                  error.response.data.message) ||
+                                error.message ||
+                                error.toString();
+                              
+                              setError('无法进入游戏: ' + resMessage);
+                            });
+                        }, 1000);
+                      } else {
+                        setError('无法进入游戏: ' + (response.data ? response.data.message : '未知错误'));
+                      }
                     }
                   })
                   .catch(error => {
+                    setLoading(false);
                     const resMessage =
                       (error.response &&
                         error.response.data &&

@@ -275,13 +275,11 @@ public class RoomController {
                 }
             }
             
-         
-            
             // 创建游戏实例
             GameHistory gameHistory = gameService.startNewGame(roomId);
-
-               // 更新房间状态为游戏中
-           
+            
+            // 更新房间状态为游戏中
+            roomService.updateStatus(roomId, "PLAYING");
             
             // 更新所有玩家状态为游戏中
             for (RoomPlayer player : players) {

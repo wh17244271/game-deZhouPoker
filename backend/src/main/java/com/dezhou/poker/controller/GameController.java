@@ -7,6 +7,7 @@ import com.dezhou.poker.entity.GameAction;
 import com.dezhou.poker.entity.GameHistory;
 import com.dezhou.poker.entity.PlayerGameHistory;
 import com.dezhou.poker.entity.Room;
+import com.dezhou.poker.entity.User;
 import com.dezhou.poker.exception.BusinessException;
 import com.dezhou.poker.security.UserPrincipal;
 import com.dezhou.poker.service.AllinVoteService;
@@ -14,6 +15,7 @@ import com.dezhou.poker.service.GameActionService;
 import com.dezhou.poker.service.GameService;
 import com.dezhou.poker.service.PlayerGameHistoryService;
 import com.dezhou.poker.service.RoomService;
+import com.dezhou.poker.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,6 +50,9 @@ public class GameController {
     @Autowired
     private RoomService roomService;
 
+    @Autowired
+    private UserService userService;
+
     /**
      * 获取房间当前游戏
      *
@@ -81,8 +86,19 @@ public class GameController {
                 }
             }
 
+            // 设置游戏关联的房间信息
+            gameHistory.setRoom(room);
+
             // 获取游戏玩家
             List<PlayerGameHistory> players = gameService.getGamePlayers(gameHistory.getId());
+            
+            // 为每个玩家设置用户信息
+            for (PlayerGameHistory player : players) {
+                if (player.getUser() == null && player.getUserId() != null) {
+                    User user = userService.getById(player.getUserId());
+                    player.setUser(user);
+                }
+            }
 
             // 构建响应
             Map<String, Object> response = new HashMap<>();
@@ -91,6 +107,7 @@ public class GameController {
 
             return ResponseEntity.ok(new ApiResponse(true, "获取当前游戏成功", response));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage()));
         }
     }

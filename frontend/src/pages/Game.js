@@ -131,9 +131,18 @@ const Game = () => {
   
   // 检查当前用户是否是房主
   const isUserRoomOwner = () => {
-    if (!game || !game.room || !game.room.owner || !currentUser) return false;
+    if (!game) return false;
     
-    const ownerId = game.room.owner.id || game.room.owner.userId || game.room.owner.user_id;
+    // 获取房间信息，可能从game.room或通过其他方式获取
+    const room = game.room;
+    if (!room || !room.owner) {
+      // 如果没有房间信息，尝试通过roomId获取
+      return false;
+    }
+    
+    if (!currentUser) return false;
+    
+    const ownerId = room.owner.id || room.owner.userId || room.owner.user_id;
     const userId = currentUser.userId || currentUser.id || currentUser.user_id;
     
     return ownerId === userId;
@@ -157,6 +166,13 @@ const Game = () => {
     return cards.map((card, index) => (
       <span key={index} className="card-display">{card}</span>
     ));
+  };
+  
+  // 获取玩家名称
+  const getPlayerName = (player) => {
+    if (!player) return '未知玩家';
+    if (player.user && player.user.username) return player.user.username;
+    return `玩家${player.userId}`;
   };
   
   if (loading) {
@@ -252,18 +268,24 @@ const Game = () => {
                     <tr>
                       <th>用户名</th>
                       <th>初始筹码</th>
+                      <th>状态</th>
                     </tr>
                   </thead>
                   <tbody>
                     {players.map(player => (
-                      <tr key={player.userId}>
+                      <tr key={player.userId || Math.random()}>
                         <td>
-                          {player.user ? player.user.username : '未知用户'}
+                          {getPlayerName(player)}
                           {currentUser && player.userId === (currentUser.userId || currentUser.id) && (
                             <Badge bg="info" className="ms-1">你</Badge>
                           )}
                         </td>
-                        <td>{player.initialChips}</td>
+                        <td>{player.initialChips || 0}</td>
+                        <td>
+                          <Badge bg={player.holeCards ? "success" : "secondary"}>
+                            {player.holeCards ? "已发牌" : "等待发牌"}
+                          </Badge>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
