@@ -266,7 +266,7 @@ public class RoomController {
             
             // 更新所有玩家状态为游戏中
             for (RoomPlayer player : players) {
-                roomPlayerService.updateStatus(roomId, player.getUserId(), "PLAYING");
+                roomPlayerService.updateStatus(roomId, player.getUserId(), "ACTIVE");
             }
             
             return ResponseEntity.ok(new ApiResponse(true, "游戏开始成功"));

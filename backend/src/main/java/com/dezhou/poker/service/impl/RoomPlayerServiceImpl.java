@@ -147,10 +147,17 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
     @Override
     @Transactional
     public boolean updateStatus(Long roomId, Long userId, String status) {
-        return update(new LambdaUpdateWrapper<RoomPlayer>()
-                .eq(RoomPlayer::getRoomId, roomId)
-                .eq(RoomPlayer::getUserId, userId)
-                .set(RoomPlayer::getStatus, status));
+        try {
+            // 将字符串转换为枚举值
+            RoomPlayer.PlayerStatus playerStatus = RoomPlayer.PlayerStatus.valueOf(status);
+            return update(new LambdaUpdateWrapper<RoomPlayer>()
+                    .eq(RoomPlayer::getRoomId, roomId)
+                    .eq(RoomPlayer::getUserId, userId)
+                    .set(RoomPlayer::getStatus, playerStatus.name()));
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid player status: " + status, e);
+            return false;
+        }
     }
 
     @Override
