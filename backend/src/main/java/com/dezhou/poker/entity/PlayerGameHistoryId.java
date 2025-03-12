@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
 import java.io.Serializable;
 
 /**
@@ -12,16 +14,19 @@ import java.io.Serializable;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Embeddable
 public class PlayerGameHistoryId implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
      * 游戏ID
      */
+    @Column(name = "game_id")
     private Long gameId;
 
     /**
      * 用户ID
      */
+    @Column(name = "user_id")
     private Long userId;
 } 

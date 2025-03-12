@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import javax.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +22,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Accessors(chain = true)
 @TableName("room_player")
+@Entity
+@Table(name = "room_player")
 public class RoomPlayer implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -38,62 +41,73 @@ public class RoomPlayer implements Serializable {
     }
 
     /**
-     * ID
+     * 玩家ID
      */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
      * 房间ID
      */
+    @Column(name = "room_id")
     @TableField("room_id")
     private Long roomId;
 
     /**
      * 用户ID
      */
+    @Column(name = "user_id")
     @TableField("user_id")
     private Long userId;
 
     /**
      * 座位号
      */
+    @Column(name = "seat_number")
     @TableField("seat_number")
     private Integer seatNumber;
 
     /**
      * 当前筹码
      */
+    @Column(name = "current_chips")
     @TableField("current_chips")
     private BigDecimal currentChips;
 
     /**
-     * 玩家状态
+     * 状态
      */
+    @Column(name = "status")
     @TableField("status")
     private String status;
 
     /**
      * 手牌
      */
+    @Column(name = "hole_cards")
     @TableField("hole_cards")
     private String holeCards;
 
     /**
      * 加入时间
      */
+    @Column(name = "joined_at")
     @TableField("joined_at")
     private LocalDateTime joinedAt;
 
     /**
      * 更新时间
      */
+    @Column(name = "updated_at")
     @TableField("updated_at")
     private LocalDateTime updatedAt;
 
     /**
      * 逻辑删除标志
      */
+    @Column(name = "deleted")
     @TableLogic
     @TableField("deleted")
     private Integer deleted;
@@ -101,6 +115,7 @@ public class RoomPlayer implements Serializable {
     /**
      * 用户
      */
+    @Transient
     @TableField(exist = false)
     private User user;
 

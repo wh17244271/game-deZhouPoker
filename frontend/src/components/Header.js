@@ -6,11 +6,11 @@ const Header = ({ currentUser, logOut }) => {
   return (
     <Navbar bg="light" expand="lg">
       <Container>
-        <Navbar.Brand as={Link} to="/">德州扑克游戏</Navbar.Brand>
+        <Navbar.Brand as={Link} to={currentUser ? "/rooms" : "/login"}>德州扑克游戏</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/">首页</Nav.Link>
+            <Nav.Link as={Link} to="/home">首页</Nav.Link>
             {currentUser && (
               <>
                 <Nav.Link as={Link} to="/rooms">房间列表</Nav.Link>

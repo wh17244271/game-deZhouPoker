@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Modal, Form, Alert } from 'react-bootstrap';
 import RoomService from '../services/RoomService';
+import '../styles/RoomList.css';
 
 const RoomList = () => {
   const [rooms, setRooms] = useState([]);
@@ -116,7 +117,7 @@ const RoomList = () => {
           <h2>房间列表</h2>
         </Col>
         <Col md={4} className="text-end">
-          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+          <Button variant="primary" className="create-room-btn" onClick={() => setShowCreateModal(true)}>
             创建新房间
           </Button>
         </Col>
@@ -140,7 +141,7 @@ const RoomList = () => {
                 <Card.Body>
                   <Card.Title>{room.name}</Card.Title>
                   <Card.Subtitle className="mb-2 text-muted">
-                    房主: {room.owner.username}
+                    房主: {room.owner && room.owner.username ? room.owner.username : room.creatorId}
                   </Card.Subtitle>
                   <Card.Text>
                     <Badge bg="primary" className="me-1">

@@ -32,8 +32,8 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     /**
      * 根据房主ID查找房间
      *
-     * @param ownerId 房主ID
+     * @param creatorId 房主ID
      * @return 房间列表
      */
-    List<Room> findByOwnerId(Long ownerId);
+    List<Room> findByCreatorId(Long creatorId);
 }

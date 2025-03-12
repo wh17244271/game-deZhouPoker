@@ -34,21 +34,21 @@ public interface ChipTransactionRepository extends JpaRepository<ChipTransaction
     /**
      * 根据用户ID和交易类型查找筹码变动记录
      *
-     * @param userId          用户ID
-     * @param transactionType 交易类型
+     * @param userId 用户ID
+     * @param type   交易类型
      * @return 筹码变动记录列表
      */
-    List<ChipTransaction> findByUserIdAndTransactionType(Long userId, ChipTransaction.TransactionType transactionType);
+    List<ChipTransaction> findByUserIdAndType(Long userId, String type);
 
     /**
      * 根据用户ID和交易时间范围查找筹码变动记录
      *
-     * @param userId      用户ID
-     * @param startTime   开始时间
-     * @param endTime     结束时间
+     * @param userId    用户ID
+     * @param startTime 开始时间
+     * @param endTime   结束时间
      * @return 筹码变动记录列表
      */
-    List<ChipTransaction> findByUserIdAndTransactionTimeBetween(Long userId, LocalDateTime startTime, LocalDateTime endTime);
+    List<ChipTransaction> findByUserIdAndCreatedAtBetween(Long userId, LocalDateTime startTime, LocalDateTime endTime);
 
     /**
      * 计算用户总赢钱金额

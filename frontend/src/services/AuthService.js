@@ -16,7 +16,7 @@ class AuthService {
         password
       })
       .then(response => {
-        if (response.data.token) {
+        if (response.data.accessToken) {
           localStorage.setItem('user', JSON.stringify(response.data));
         }
         return response.data;
@@ -33,15 +33,15 @@ class AuthService {
   /**
    * 用户注册
    * @param {string} username - 用户名
-   * @param {string} email - 邮箱
    * @param {string} password - 密码
+   * @param {number} initialChips - 初始筹码
    * @returns {Promise} - 返回注册结果的Promise
    */
-  register(username, email, password) {
+  register(username, password, initialChips) {
     return axios.post(`${API_URL}/auth/signup`, {
       username,
-      email,
-      password
+      password,
+      initialChips
     });
   }
 
@@ -108,11 +108,11 @@ class AuthService {
         refreshToken: user.refreshToken
       })
       .then(response => {
-        if (response.data.token) {
+        if (response.data.accessToken) {
           // 更新本地存储中的用户信息
           localStorage.setItem('user', JSON.stringify({
             ...user,
-            token: response.data.token,
+            accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
             expiresAt: response.data.expiresAt
           }));
@@ -135,7 +135,7 @@ class AuthService {
     return axios
       .put(`${API_URL}/users/${user.userId}`, userData, {
         headers: {
-          Authorization: 'Bearer ' + user.token
+          Authorization: 'Bearer ' + user.accessToken
         }
       })
       .then(response => {
@@ -168,7 +168,7 @@ class AuthService {
       },
       {
         headers: {
-          Authorization: 'Bearer ' + user.token
+          Authorization: 'Bearer ' + user.accessToken
         }
       }
     );

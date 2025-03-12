@@ -1,5 +1,5 @@
 import SockJS from 'sockjs-client';
-import Stomp from 'stompjs';
+import { Client } from '@stomp/stompjs';
 import AuthService from './AuthService';
 
 class WebSocketService {
@@ -43,24 +43,24 @@ class WebSocketService {
     const wsUrl = `${API_URL}/ws`;
 
     try {
-      // 使用SockJS创建WebSocket连接
-      const socket = new SockJS(wsUrl);
-      this.stompClient = Stomp.over(socket);
-      
-      // 禁用调试日志
-      this.stompClient.debug = null;
+      // 创建STOMP客户端
+      this.stompClient = new Client({
+        webSocketFactory: () => new SockJS(wsUrl),
+        connectHeaders: {
+          'Authorization': 'Bearer ' + user.token
+        },
+        debug: function (str) {
+          // console.log(str);
+        },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+        onConnect: this.handleConnect.bind(this),
+        onStompError: this.handleError.bind(this)
+      });
 
-      // 设置连接头
-      const headers = {
-        'Authorization': 'Bearer ' + user.token
-      };
-
-      // 连接WebSocket
-      this.stompClient.connect(
-        headers,
-        this.handleConnect.bind(this),
-        this.handleError.bind(this)
-      );
+      // 启动连接
+      this.stompClient.activate();
     } catch (error) {
       console.error('WebSocket连接错误:', error);
       if (this.callbacks.onError) {
@@ -79,7 +79,7 @@ class WebSocketService {
         this.subscription = null;
       }
       
-      this.stompClient.disconnect();
+      this.stompClient.deactivate();
       this.stompClient = null;
       this.isConnected = false;
       this.roomId = null;
@@ -101,7 +101,7 @@ class WebSocketService {
   /**
    * 处理连接成功
    */
-  handleConnect() {
+  handleConnect(frame) {
     console.log('WebSocket连接已建立');
     this.isConnected = true;
     this.reconnectAttempts = 0;
@@ -147,7 +147,7 @@ class WebSocketService {
     if (this.callbacks.onError) {
       this.callbacks.onError(error);
     }
-
+    
     // 尝试重新连接
     this.attemptReconnect();
   }
@@ -182,11 +182,11 @@ class WebSocketService {
     }
 
     try {
-      this.stompClient.send(
-        `/app/room/${this.roomId}/join`,
-        {},
-        JSON.stringify({ type: 'JOIN', content: '加入房间' })
-      );
+      this.stompClient.publish({
+        destination: `/app/room/${this.roomId}/join`,
+        headers: {},
+        body: JSON.stringify({ type: 'JOIN', content: '加入房间' })
+      });
       return true;
     } catch (error) {
       console.error('发送消息失败:', error);
@@ -205,11 +205,11 @@ class WebSocketService {
     }
 
     try {
-      this.stompClient.send(
-        `/app/room/${this.roomId}/chat`,
-        {},
-        JSON.stringify({ type: 'CHAT', content })
-      );
+      this.stompClient.publish({
+        destination: `/app/room/${this.roomId}/chat`,
+        headers: {},
+        body: JSON.stringify({ type: 'CHAT', content })
+      });
       return true;
     } catch (error) {
       console.error('发送消息失败:', error);
@@ -242,11 +242,11 @@ class WebSocketService {
       // 获取当前轮次
       data.round = this.getCurrentRound();
 
-      this.stompClient.send(
-        `/app/room/${this.roomId}/action`,
-        {},
-        JSON.stringify({ type: 'ACTION', data })
-      );
+      this.stompClient.publish({
+        destination: `/app/room/${this.roomId}/action`,
+        headers: {},
+        body: JSON.stringify({ type: 'ACTION', data })
+      });
       return true;
     } catch (error) {
       console.error('发送消息失败:', error);
@@ -268,17 +268,17 @@ class WebSocketService {
     try {
       const voteOption = this.getVoteOptionValue(option);
       
-      this.stompClient.send(
-        `/app/room/${this.roomId}/allin-vote`,
-        {},
-        JSON.stringify({ 
+      this.stompClient.publish({
+        destination: `/app/room/${this.roomId}/allin-vote`,
+        headers: {},
+        body: JSON.stringify({ 
           type: 'ALLIN_VOTE', 
           data: {
             gameId,
-            voteOption
+            option: voteOption
           }
         })
-      );
+      });
       return true;
     } catch (error) {
       console.error('发送消息失败:', error);

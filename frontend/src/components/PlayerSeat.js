@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from './Card';
+import './PlayerSeat.css';
 
 const PlayerSeat = ({ 
   player, 
@@ -10,7 +11,8 @@ const PlayerSeat = ({
   isSmallBlind = false,
   isBigBlind = false,
   lastAction = null,
-  betAmount = 0
+  betAmount = 0,
+  currentUser
 }) => {
   // 计算座位位置样式
   const getPositionStyle = () => {
@@ -123,8 +125,8 @@ const PlayerSeat = ({
         </div>
       ) : (
         <div className="player-cards">
-          <Card hidden={true} />
-          <Card hidden={true} />
+          <div className="card card-placeholder"></div>
+          <div className="card card-placeholder"></div>
         </div>
       )}
     </div>

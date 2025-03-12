@@ -18,6 +18,9 @@ import PrivateRoute from './components/PrivateRoute';
 // 导入服务
 import AuthService from './services/AuthService';
 
+// 导入Bootstrap样式
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +48,8 @@ function App() {
         <Header currentUser={currentUser} logOut={logOut} />
         <div className="container mt-3">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={currentUser ? <Navigate to="/rooms" /> : <Navigate to="/login" />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/login" element={currentUser ? <Navigate to="/rooms" /> : <Login setCurrentUser={setCurrentUser} />} />
             <Route path="/register" element={currentUser ? <Navigate to="/rooms" /> : <Register />} />
             <Route 

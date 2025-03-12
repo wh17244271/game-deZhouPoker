@@ -450,6 +450,7 @@ const GameTable = ({ currentUser }) => {
                     isBigBlind={isBigBlind}
                     lastAction={lastAction}
                     betAmount={betAmount}
+                    currentUser={currentUser}
                   />
                 );
               })}

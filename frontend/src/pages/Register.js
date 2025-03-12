@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Form, Button, Card, Alert } from 'react-bootstrap';
 import AuthService from '../services/AuthService';
+import '../styles/Auth.css';
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -13,6 +13,96 @@ const Register = () => {
   const [successful, setSuccessful] = useState(false);
   const navigate = useNavigate();
 
+  // 添加表单验证错误信息
+  const [usernameError, setUsernameError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [chipsError, setChipsError] = useState('');
+
+  // 验证用户名
+  const validateUsername = (value) => {
+    if (!value) {
+      setUsernameError('请输入用户名');
+      return false;
+    }
+    if (value.length < 3 || value.length > 50) {
+      setUsernameError('用户名长度必须在3到50个字符之间');
+      return false;
+    }
+    setUsernameError('');
+    return true;
+  };
+
+  // 验证密码
+  const validatePassword = (value) => {
+    if (!value) {
+      setPasswordError('请输入密码');
+      return false;
+    }
+    if (value.length < 6 || value.length > 20) {
+      setPasswordError('密码长度必须在6到20个字符之间');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
+  // 验证确认密码
+  const validateConfirmPassword = (value) => {
+    if (!value) {
+      setConfirmPasswordError('请确认密码');
+      return false;
+    }
+    if (value !== password) {
+      setConfirmPasswordError('两次输入的密码不一致');
+      return false;
+    }
+    setConfirmPasswordError('');
+    return true;
+  };
+
+  // 验证筹码
+  const validateChips = (value) => {
+    if (!value) {
+      setChipsError('请输入初始筹码');
+      return false;
+    }
+    if (value < 100) {
+      setChipsError('初始筹码不能少于100');
+      return false;
+    }
+    setChipsError('');
+    return true;
+  };
+
+  // 处理输入变化
+  const handleUsernameChange = (e) => {
+    const value = e.target.value;
+    setUsername(value);
+    validateUsername(value);
+  };
+
+  const handlePasswordChange = (e) => {
+    const value = e.target.value;
+    setPassword(value);
+    validatePassword(value);
+    if (confirmPassword) {
+      validateConfirmPassword(confirmPassword);
+    }
+  };
+
+  const handleConfirmPasswordChange = (e) => {
+    const value = e.target.value;
+    setConfirmPassword(value);
+    validateConfirmPassword(value);
+  };
+
+  const handleChipsChange = (e) => {
+    const value = Number(e.target.value);
+    setInitialChips(value);
+    validateChips(value);
+  };
+
   const handleRegister = (e) => {
     e.preventDefault();
     setMessage('');
@@ -20,26 +110,12 @@ const Register = () => {
     setSuccessful(false);
 
     // 表单验证
-    if (!username) {
-      setMessage('请输入用户名');
-      setLoading(false);
-      return;
-    }
+    const isUsernameValid = validateUsername(username);
+    const isPasswordValid = validatePassword(password);
+    const isConfirmPasswordValid = validateConfirmPassword(confirmPassword);
+    const isChipsValid = validateChips(initialChips);
 
-    if (!password) {
-      setMessage('请输入密码');
-      setLoading(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setMessage('两次输入的密码不一致');
-      setLoading(false);
-      return;
-    }
-
-    if (initialChips < 100) {
-      setMessage('初始筹码不能少于100');
+    if (!isUsernameValid || !isPasswordValid || !isConfirmPasswordValid || !isChipsValid) {
       setLoading(false);
       return;
     }
@@ -70,78 +146,81 @@ const Register = () => {
   };
 
   return (
-    <div className="register-container">
-      <Card>
-        <Card.Body>
-          <h2 className="text-center mb-4">注册</h2>
-          {message && (
-            <Alert variant={successful ? "success" : "danger"}>
-              {message}
-            </Alert>
-          )}
-          <Form onSubmit={handleRegister}>
-            <Form.Group className="mb-3">
-              <Form.Label>用户名</Form.Label>
-              <Form.Control
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="请输入用户名"
-                disabled={loading || successful}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>密码</Form.Label>
-              <Form.Control
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="请输入密码"
-                disabled={loading || successful}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>确认密码</Form.Label>
-              <Form.Control
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="请再次输入密码"
-                disabled={loading || successful}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>初始筹码</Form.Label>
-              <Form.Control
-                type="number"
-                value={initialChips}
-                onChange={(e) => setInitialChips(Number(e.target.value))}
-                placeholder="请输入初始筹码数量"
-                min="100"
-                disabled={loading || successful}
-              />
-              <Form.Text className="text-muted">
-                初始筹码不能少于100
-              </Form.Text>
-            </Form.Group>
-
-            <Button
-              variant="primary"
-              type="submit"
-              className="w-100 mt-3"
-              disabled={loading || successful}
-            >
-              {loading ? '注册中...' : '注册'}
-            </Button>
-          </Form>
-          <div className="text-center mt-3">
-            已有账号？ <Link to="/login">立即登录</Link>
+    <div className="register-page">
+      <div className="register-box">
+        <h2 className="register-title">注册</h2>
+        {message && (
+          <div className={`alert ${successful ? 'alert-success' : 'alert-danger'}`}>
+            {message}
           </div>
-        </Card.Body>
-      </Card>
+        )}
+        <form onSubmit={handleRegister}>
+          <div className="form-group">
+            <label htmlFor="username">用户名</label>
+            <input
+              type="text"
+              className={`form-control ${usernameError ? 'is-invalid' : ''}`}
+              id="username"
+              value={username}
+              onChange={handleUsernameChange}
+              placeholder="请输入用户名 (3-50个字符)"
+              disabled={loading || successful}
+            />
+            {usernameError && <div className="invalid-feedback">{usernameError}</div>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">密码</label>
+            <input
+              type="password"
+              className={`form-control ${passwordError ? 'is-invalid' : ''}`}
+              id="password"
+              value={password}
+              onChange={handlePasswordChange}
+              placeholder="请输入密码 (6-20个字符)"
+              disabled={loading || successful}
+            />
+            {passwordError && <div className="invalid-feedback">{passwordError}</div>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="confirmPassword">确认密码</label>
+            <input
+              type="password"
+              className={`form-control ${confirmPasswordError ? 'is-invalid' : ''}`}
+              id="confirmPassword"
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              placeholder="请再次输入密码"
+              disabled={loading || successful}
+            />
+            {confirmPasswordError && <div className="invalid-feedback">{confirmPasswordError}</div>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="initialChips">初始筹码</label>
+            <input
+              type="number"
+              className={`form-control ${chipsError ? 'is-invalid' : ''}`}
+              id="initialChips"
+              value={initialChips}
+              onChange={handleChipsChange}
+              placeholder="请输入初始筹码数量"
+              min="100"
+              disabled={loading || successful}
+            />
+            {chipsError && <div className="invalid-feedback">{chipsError}</div>}
+            <small className="form-text text-muted">初始筹码不能少于100</small>
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
+            disabled={loading || successful}
+          >
+            {loading ? '注册中...' : '注册'}
+          </button>
+        </form>
+        <div className="login-link">
+          已有账号？ <Link to="/login">立即登录</Link>
+        </div>
+      </div>
     </div>
   );
 };

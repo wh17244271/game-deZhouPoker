@@ -1,118 +1,88 @@
-# 德州扑克游戏
+# 德州扑克游戏系统
 
-这是一个基于Spring Boot和React的在线德州扑克游戏系统。
-
-## 技术栈
-
-### 后端
-- Spring Boot 2.7.x
-- Spring Security + JWT认证
-- MyBatis-Plus
-- MySQL 8.0
-- WebSocket
-- Docker
-
-### 前端
-- React 18
-- React Bootstrap
-- Axios
-- SockJS
-
-## 快速开始
-
-### 使用Docker运行
-
-1. 确保已安装Docker和Docker Compose
-
-2. 克隆项目
-```bash
-git clone https://github.com/yourusername/game-deZhouPoker.git
-cd game-deZhouPoker
-```
-
-3. 启动服务
-```bash
-docker-compose up -d
-```
-
-现在可以访问:
-- 前端: http://localhost:3000
-- 后端API: http://localhost:8080
-- Swagger文档: http://localhost:8080/swagger-ui.html
-
-### 本地开发
-
-#### 后端
-1. 确保已安装JDK 11和Maven
-
-2. 配置MySQL数据库
-```bash
-# 创建数据库
-mysql -u root -p
-create database poker;
-```
-
-3. 运行后端
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-#### 前端
-1. 确保已安装Node.js
-
-2. 安装依赖并运行
-```bash
-cd frontend
-npm install
-npm start
-```
-
-## 主要功能
-
-- 用户注册和登录
-- 创建/加入游戏房间
-- 实时游戏对战
-- 玩家操作（下注、加注、弃牌等）
-- 游戏记录查询
-- 玩家统计数据
-- 游戏内聊天
+这是一个基于Spring Boot的德州扑克游戏后端系统，提供了完整的游戏逻辑、用户管理、房间管理等功能。
 
 ## 项目结构
 
 ```
-.
-├── backend/                # 后端项目
-│   ├── src/
+game-deZhouPoker/
+├── backend/                 # 后端代码
+│   ├── src/                 # 源代码
 │   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   │   └── test/
-│   └── pom.xml
-├── frontend/              # 前端项目
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── services/
-│   └── package.json
-├── docker-compose.yml     # Docker编排配置
-├── Dockerfile            # 后端Docker构建文件
-└── README.md
+│   │   │   ├── java/        # Java代码
+│   │   │   └── resources/   # 配置文件
+│   │   └── test/            # 测试代码
+│   └── pom.xml              # Maven配置
+└── .vscode/                 # VSCode配置
+    ├── launch.json          # 启动配置
+    └── tasks.json           # 任务配置
+```
+
+## 技术栈
+
+- Spring Boot 2.x
+- Spring Security + JWT
+- Spring Data JPA
+- MyBatis-Plus
+- WebSocket
+- MySQL 8.x
+
+## 快速开始
+
+### 环境要求
+
+- JDK 11+
+- Maven 3.6+
+- MySQL 8.0+
+- Visual Studio Code
+
+### 数据库配置
+
+1. 创建名为`dezhou`的数据库
+2. 根据需要修改`application-dev.properties`中的数据库连接信息
+
+### 使用VSCode启动项目
+
+本项目已配置VSCode的启动文件，可以通过以下步骤快速启动：
+
+1. 在VSCode中打开项目
+2. 按下`F5`或点击"运行"菜单中的"启动调试"
+3. 在弹出的启动配置中选择以下选项之一：
+   - `启动德州扑克后端` - 直接启动应用
+   - `使用Maven启动德州扑克` - 通过Maven启动
+   - `调试德州扑克后端` - 启动并开启远程调试
+
+### 手动启动项目
+
+```bash
+# 进入后端目录
+cd backend
+
+# 编译项目
+mvn clean compile
+
+# 启动项目（开发环境）
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ## API文档
 
-API文档使用Swagger生成，运行后端服务后访问：
-http://localhost:8080/swagger-ui.html
+启动项目后，可以通过以下地址访问API文档：
 
-## 贡献指南
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
 
-1. Fork项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建Pull Request
+## 开发指南
+
+### 配置文件
+
+- `application.properties` - 通用配置
+- `application-dev.properties` - 开发环境配置
+- `application-prod.properties` - 生产环境配置（需自行创建）
+
+### 代码规范
+
+请参考项目根目录下的`开发规范.md`文件，遵循统一的编码和设计规范。
 
 ## 许可证
 
-本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+[MIT License](LICENSE)

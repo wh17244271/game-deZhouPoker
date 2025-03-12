@@ -32,16 +32,19 @@ class RoomService {
    * @returns {Promise} - 返回创建房间结果的Promise
    */
   createRoom(name, password, minPlayers, maxPlayers, smallBlind, bigBlind) {
+    const params = new URLSearchParams();
+    params.append('name', name);
+    if (password) {
+      params.append('password', password);
+    }
+    params.append('minPlayers', minPlayers);
+    params.append('maxPlayers', maxPlayers);
+    params.append('smallBlind', smallBlind);
+    params.append('bigBlind', bigBlind);
+    
     return axios.post(
-      `${API_URL}/rooms`,
-      {
-        name,
-        password,
-        minPlayers,
-        maxPlayers,
-        smallBlind,
-        bigBlind
-      },
+      `${API_URL}/rooms?${params.toString()}`,
+      {},
       { headers: authHeader() }
     );
   }
@@ -54,12 +57,13 @@ class RoomService {
    * @returns {Promise} - 返回加入房间结果的Promise
    */
   joinRoom(roomId, seatNumber, buyIn) {
+    const params = new URLSearchParams();
+    params.append('seatNumber', seatNumber);
+    params.append('buyIn', buyIn);
+    
     return axios.post(
-      `${API_URL}/rooms/${roomId}/join`,
-      {
-        seatNumber,
-        buyIn
-      },
+      `${API_URL}/rooms/${roomId}/join?${params.toString()}`,
+      {},
       { headers: authHeader() }
     );
   }
