@@ -1,15 +1,15 @@
 .player-seat {
   position: absolute;
-  width: 120px;
-  height: 100px;
+  width: 100px;
+  height: 80px;
   background-color: rgba(0, 100, 0, 0.7);
   border: 3px solid #444;
   border-radius: 10px;
   color: white;
-  padding: 8px;
+  padding: 6px;
   text-align: center;
   z-index: 1;
-  font-size: 14px;
+  font-size: 12px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -21,6 +21,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.empty-seat:hover {
+  background-color: rgba(0, 150, 0, 0.7);
+  border-color: white;
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .current-user-seat {
@@ -171,4 +180,23 @@
     #4682b4 5px,
     #4682b4 10px
   );
+}
+
+.dealer-position {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #3a2c60;
+  border: 2px solid #8a2be2;
+  border-radius: 10px;
+  color: white;
+  padding: 5px 10px;
+  z-index: 1;
+  font-size: 14px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
 } 

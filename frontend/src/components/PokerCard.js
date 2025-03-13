@@ -12,18 +12,28 @@ const PokerCard = ({ card, hidden = false, small = false }) => {
 
   // 解析扑克牌
   const parseCard = (cardStr) => {
-    if (!cardStr || cardStr.length < 2) {
+    // 如果card已经是对象形式（可能从PokerUtils.parseCard获取）
+    if (typeof cardStr === 'object' && cardStr.suit && cardStr.rank) {
+      const suitColor = (cardStr.suit.code === 'H' || cardStr.suit.code === 'D') ? 'red' : 'black';
+      return {
+        rank: cardStr.rank.symbol,
+        suit: cardStr.suit.symbol,
+        suitColor: suitColor
+      };
+    }
+    
+    if (!cardStr || typeof cardStr !== 'string' || cardStr.length < 2) {
       return { rank: '?', suit: '?' };
     }
     
-    const rank = cardStr.slice(0, -1);
-    const suitChar = cardStr.slice(-1);
+    const rank = cardStr.charAt(0).toUpperCase();
+    const suitChar = cardStr.charAt(1).toUpperCase();
     
     let suit = '';
     let suitColor = '';
     
     // 设置花色
-    switch (suitChar.toUpperCase()) {
+    switch (suitChar) {
       case 'H': // 红桃
         suit = '♥';
         suitColor = 'red';

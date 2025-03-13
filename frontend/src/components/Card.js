@@ -39,7 +39,7 @@ const Card = ({ card, hidden = false, size = 'normal' }) => {
     );
   }
 
-  // 确定花色颜色
+  // 确定花色颜色 - 红桃和方块为红色
   const colorClass = ['H', 'D'].includes(parsedCard.suit.code) ? 'card-red' : 'card-black';
 
   return (

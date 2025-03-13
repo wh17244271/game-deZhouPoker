@@ -30,17 +30,6 @@ public class RoomPlayer implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 玩家状态枚举
-     */
-    public enum PlayerStatus {
-        ACTIVE,     // 活跃
-        FOLDED,     // 弃牌
-        ALL_IN,     // 全下
-        WAITING,    // 等待
-        PLAYING     // 游戏中 (兼容旧代码)
-    }
-
-    /**
      * 房间ID - 主键部分
      */
     @Id
@@ -75,7 +64,8 @@ public class RoomPlayer implements Serializable {
      */
     @Column(name = "status")
     @TableField("status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private PlayerStatus status = PlayerStatus.WAITING;
 
     /**
      * 最后动作
@@ -119,20 +109,6 @@ public class RoomPlayer implements Serializable {
     @Transient
     @TableField(exist = false)
     private User user;
-
-    /**
-     * 获取玩家状态枚举
-     */
-    public PlayerStatus getStatusEnum() {
-        return PlayerStatus.valueOf(status);
-    }
-
-    /**
-     * 设置玩家状态枚举
-     */
-    public void setStatusEnum(PlayerStatus status) {
-        this.status = status.name();
-    }
     
     /**
      * 设置加入时间 (兼容旧代码)

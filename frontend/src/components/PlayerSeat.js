@@ -19,15 +19,15 @@ const PlayerSeat = ({
   // 确定座位的位置样式
   const getSeatPositionStyle = (position) => {
     const positions = {
-      1: { bottom: '10%', left: '40%' },
-      2: { bottom: '20%', left: '15%' },
-      3: { bottom: '50%', left: '5%' },
-      4: { top: '20%', left: '15%' },
-      5: { top: '10%', left: '40%' },
-      6: { top: '10%', right: '40%' },
-      7: { top: '20%', right: '15%' },
-      8: { bottom: '50%', right: '5%' },
-      9: { bottom: '20%', right: '15%' }
+      1: { bottom: '8%', left: '43%' },
+      2: { bottom: '15%', left: '20%' },
+      3: { bottom: '40%', left: '8%' },
+      4: { top: '40%', left: '8%' },
+      5: { top: '15%', left: '20%' },
+      6: { top: '15%', right: '20%' },
+      7: { top: '40%', right: '8%' },
+      8: { bottom: '40%', right: '8%' },
+      9: { bottom: '15%', right: '20%' }
     };
     
     return positions[position] || {};

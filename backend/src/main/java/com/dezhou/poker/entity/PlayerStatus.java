@@ -10,6 +10,16 @@ public enum PlayerStatus {
     WAITING,
     
     /**
+     * 已入座
+     */
+    SEATED,
+    
+    /**
+     * 游戏中
+     */
+    IN_GAME,
+    
+    /**
      * 活跃
      */
     ACTIVE,

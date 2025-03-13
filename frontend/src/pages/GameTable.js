@@ -66,14 +66,14 @@ const GameTable = ({ currentUser }) => {
       
       // 连接WebSocket
       WebSocketService.connect(roomId, {
-        onConnect: () => {
-          console.log('WebSocket连接成功');
+      onConnect: () => {
+        console.log('WebSocket连接成功');
           setWebSocketConnected(true);
           addSystemMessage('已连接到游戏服务器');
-        },
-        onMessage: handleWebSocketMessage,
-        onError: (error) => {
-          console.error('WebSocket错误:', error);
+      },
+      onMessage: handleWebSocketMessage,
+      onError: (error) => {
+        console.error('WebSocket错误:', error);
           addSystemMessage('连接错误: ' + error);
         },
         onDisconnect: () => {
@@ -85,22 +85,22 @@ const GameTable = ({ currentUser }) => {
       
       // 检查用户状态并自动入座
       checkAndSeatPlayer();
-      
-      // 加载游戏数据
-      loadGameData();
-      
+    
+    // 加载游戏数据
+    loadGameData();
+    
       // 启动游戏数据更新定时器
       startGameUpdater();
       
       // 组件卸载时清理
-      return () => {
+    return () => {
         console.log('GameTable组件卸载，断开WebSocket连接');
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
-        WebSocketService.disconnect();
-      };
+      WebSocketService.disconnect();
+    };
     }
   }, [currentUser, roomId]);
   
@@ -400,7 +400,7 @@ const GameTable = ({ currentUser }) => {
       });
   };
   
-  // 处理发牌
+  // 处理发牌和游戏流程
   const handleDealCards = () => {
     console.log('开始发牌，房间ID:', roomId);
     setLoading(true);
@@ -409,7 +409,13 @@ const GameTable = ({ currentUser }) => {
       .then(response => {
         console.log('发牌响应:', response);
         if (response.data && response.data.success) {
-          addSystemMessage('发牌成功');
+          addSystemMessage('游戏开始，发牌成功！');
+          
+          // 更新游戏状态为前翻牌阶段
+          setCurrentRound('PRE_FLOP');
+          
+          // 从小盲位置开始下注
+          setCurrentTurn(smallBlindPosition);
           
           // 重新加载游戏数据
           loadGameData();
@@ -501,16 +507,16 @@ const GameTable = ({ currentUser }) => {
                 bigBlind: 20
               };
             }
-            
-            setGame(gameData);
+          
+          setGame(gameData);
             setPlayers(Array.isArray(playersData) ? playersData : []);
             setActions(Array.isArray(actionsData) ? actionsData : []);
-            
-            // 处理游戏数据
+          
+          // 处理游戏数据
             processGameData(gameData, 
                          Array.isArray(playersData) ? playersData : [], 
                          Array.isArray(actionsData) ? actionsData : []);
-          } else {
+        } else {
             console.error('未找到有效的游戏数据，创建默认游戏对象');
             
             // 创建一个默认的游戏对象
@@ -618,7 +624,7 @@ const GameTable = ({ currentUser }) => {
     // 设置公共牌
     if (gameData.communityCards) {
       try {
-        setCommunityCards(PokerUtils.parseCards(gameData.communityCards));
+      setCommunityCards(PokerUtils.parseCards(gameData.communityCards));
       } catch (e) {
         console.error('解析公共牌错误:', e);
         setCommunityCards([]);
@@ -634,12 +640,12 @@ const GameTable = ({ currentUser }) => {
       // 计算奖池大小
       try {
         const potSize = validActionsData.reduce((total, action) => {
-          if (['BET', 'CALL', 'RAISE', 'ALL_IN'].includes(action.actionType)) {
+        if (['BET', 'CALL', 'RAISE', 'ALL_IN'].includes(action.actionType)) {
             return total + (parseFloat(action.amount) || 0);
-          }
-          return total;
-        }, 0);
-        setPotSize(potSize);
+        }
+        return total;
+      }, 0);
+      setPotSize(potSize);
       } catch (e) {
         console.error('计算奖池错误:', e);
         setPotSize(0);
@@ -649,7 +655,7 @@ const GameTable = ({ currentUser }) => {
     // 设置当前游戏轮次
     if (gameData.currentRound !== undefined) {
       // 根据轮次的数值设置对应的轮次名称
-      const rounds = ['PRE_FLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'];
+    const rounds = ['PRE_FLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'];
       const roundIndex = parseInt(gameData.currentRound);
       if (!isNaN(roundIndex) && roundIndex >= 0 && roundIndex < rounds.length) {
         setCurrentRound(rounds[roundIndex]);
@@ -661,27 +667,36 @@ const GameTable = ({ currentUser }) => {
     }
     
     // 设置庄家位置、小盲注位置和大盲注位置
-    if (gameData.dealerPosition) {
-      setDealerPosition(parseInt(gameData.dealerPosition));
-    }
-    
-    if (gameData.smallBlindPosition) {
-      setSmallBlindPosition(parseInt(gameData.smallBlindPosition));
-    }
-    
-    if (gameData.bigBlindPosition) {
-      setBigBlindPosition(parseInt(gameData.bigBlindPosition));
+    if (gameData.dealerPosition !== undefined && gameData.dealerPosition !== null) {
+      setDealerPosition(gameData.dealerPosition);
+      
+      // 确保小盲在庄家顺时针方向的下一个位置
+      const smallBlindPos = (gameData.dealerPosition % 9) + 1;
+      setSmallBlindPosition(smallBlindPos);
+      
+      // 确保大盲在小盲顺时针方向的下一个位置
+      const bigBlindPos = (smallBlindPos % 9) + 1;
+      setBigBlindPosition(bigBlindPos);
     }
     
     // 处理玩家信息
     const processedPlayers = validPlayersData.map(player => {
-      // 构造完整的玩家对象
-      const userObj = player.user || { id: player.userId, username: `玩家${player.seatNumber || ''}` };
+      // 确保user对象存在，如果不存在，创建一个包含必要信息的user对象
+      const userObj = player.user || {
+        id: player.userId,
+        username: player.username || `玩家${player.seatNumber || ''}`
+      };
       
       return {
         ...player,
         user: userObj,
-        status: player.status || 'WAITING'
+        userId: player.userId || userObj.id,
+        username: player.username || userObj.username,
+        status: player.status || 'WAITING',
+        currentChips: player.currentChips || 0,
+        // 确保seatNumber是数字类型
+        seatNumber: typeof player.seatNumber === 'number' ? player.seatNumber : 
+                   (player.seatNumber ? parseInt(player.seatNumber) : null)
       };
     });
     
@@ -695,9 +710,11 @@ const GameTable = ({ currentUser }) => {
     if (currentPlayerInfo) {
       setCurrentPlayerSeat(currentPlayerInfo.seatNumber);
       setIsSeated(currentPlayerInfo.seatNumber !== null);
+      setCurrentPlayer(currentPlayerInfo);
     } else {
       setCurrentPlayerSeat(null);
       setIsSeated(false);
+      setCurrentPlayer(null);
     }
     
     // 确定当前轮到哪个玩家
@@ -707,7 +724,7 @@ const GameTable = ({ currentUser }) => {
       )?.seatNumber;
       
       setCurrentTurn(currentPlayerSeat);
-    } else {
+      } else {
       setCurrentTurn(null);
     }
   };
@@ -869,7 +886,7 @@ const GameTable = ({ currentUser }) => {
     addMessage({
       type: 'SYSTEM',
       content
-    });
+      });
   };
   
   // 检查是否是当前玩家的回合
@@ -956,6 +973,9 @@ const GameTable = ({ currentUser }) => {
           // 添加系统消息
           addSystemMessage(`您选择了 ${getActionText(actionType)} ${amount > 0 ? amount : ''}`);
           
+          // 移动到下一个玩家
+          moveToNextPlayer();
+          
           // 重新加载游戏数据
           loadGameData();
         } else {
@@ -977,6 +997,149 @@ const GameTable = ({ currentUser }) => {
       });
   };
   
+  // 移动到下一个玩家
+  const moveToNextPlayer = () => {
+    if (!game || !currentTurn) return;
+    
+    // 找出活跃玩家
+    const activePlayers = players.filter(p => p.status === 'ACTIVE');
+    if (activePlayers.length <= 1) {
+      // 只有一个活跃玩家，游戏结束
+      endCurrentRound();
+      return;
+    }
+    
+    // 找出当前玩家在活跃玩家中的位置
+    const currentPlayerIndex = activePlayers.findIndex(p => p.seatNumber === currentTurn);
+    if (currentPlayerIndex === -1) {
+      // 当前玩家不在活跃玩家中，从第一个活跃玩家开始
+      setCurrentTurn(activePlayers[0].seatNumber);
+      return;
+    }
+    
+    // 获取下一个活跃玩家
+    const nextPlayerIndex = (currentPlayerIndex + 1) % activePlayers.length;
+    const nextPlayer = activePlayers[nextPlayerIndex];
+    
+    // 如果回到了第一个行动的玩家，且所有玩家的下注金额相等，则结束当前回合
+    const allBetsEqual = activePlayers.every(p => {
+      const lastBet = getPlayerLastBet(p.user?.id || p.userId);
+      return lastBet === currentBet || (p.status === 'ALL_IN');
+    });
+    
+    // 如果已经是最后一个玩家，并且所有下注相等，进入下一轮
+    if (nextPlayerIndex === 0 && allBetsEqual) {
+      endCurrentRound();
+    } else {
+      // 否则，移动到下一个玩家
+      setCurrentTurn(nextPlayer.seatNumber);
+    }
+  };
+  
+  // 结束当前回合，进入下一轮
+  const endCurrentRound = () => {
+    // 根据当前轮次确定下一轮
+    switch (currentRound) {
+      case 'PRE_FLOP':
+        // 前翻牌阶段结束，进入翻牌阶段
+        setCurrentRound('FLOP');
+        // 发出3张公共牌
+        dealCommunityCards(3);
+        break;
+      case 'FLOP':
+        // 翻牌阶段结束，进入转牌阶段
+        setCurrentRound('TURN');
+        // 发出第4张公共牌
+        dealCommunityCards(1);
+        break;
+      case 'TURN':
+        // 转牌阶段结束，进入河牌阶段
+        setCurrentRound('RIVER');
+        // 发出第5张公共牌
+        dealCommunityCards(1);
+        break;
+      case 'RIVER':
+        // 河牌阶段结束，进入摊牌阶段
+        setCurrentRound('SHOWDOWN');
+        // 结算游戏
+        showdownGame();
+        break;
+      default:
+        break;
+    }
+    
+    // 重置当前下注为0
+    setCurrentBet(0);
+    
+    // 从庄家下一位开始行动（小盲位置）
+    if (dealerPosition) {
+      const nextPlayerPosition = (dealerPosition % 9) + 1;
+      setCurrentTurn(nextPlayerPosition);
+    }
+  };
+  
+  // 发出公共牌
+  const dealCommunityCards = (count) => {
+    if (!game || !game.id) return;
+    
+    GameService.dealCommunityCards(game.id, count)
+      .then(response => {
+        if (response.data && response.data.success) {
+          const newCards = response.data.data;
+          setCommunityCards(prevCards => [...prevCards, ...newCards]);
+          
+          switch (count) {
+            case 3:
+              addSystemMessage('翻牌：发出3张公共牌');
+              break;
+            case 1:
+              if (currentRound === 'TURN') {
+                addSystemMessage('转牌：发出第4张公共牌');
+              } else if (currentRound === 'RIVER') {
+                addSystemMessage('河牌：发出第5张公共牌');
+              }
+              break;
+            default:
+              addSystemMessage(`发出${count}张公共牌`);
+          }
+          
+          // 重新加载游戏数据
+          loadGameData();
+        }
+      })
+      .catch(error => {
+        console.error('发公共牌错误:', error);
+        setError('发公共牌失败');
+      });
+  };
+  
+  // 游戏结算
+  const showdownGame = () => {
+    if (!game || !game.id) return;
+    
+    GameService.showdown(game.id)
+      .then(response => {
+        if (response.data && response.data.success) {
+          const results = response.data.data;
+          addSystemMessage('游戏结束，结算中...');
+          
+          // 显示结果
+          setShowResults(true);
+          setWinners(results.winners || []);
+          
+          // 更新奖池
+          setPotSize(0);
+          
+          // 更新玩家筹码
+          loadGameData();
+        }
+      })
+      .catch(error => {
+        console.error('游戏结算错误:', error);
+        setError('游戏结算失败');
+      });
+  };
+  
   // 获取动作文本描述
   const getActionText = (actionType) => {
     switch (actionType) {
@@ -994,6 +1157,33 @@ const GameTable = ({ currentUser }) => {
         return '全押';
       default:
         return actionType;
+    }
+  };
+  
+  // 处理玩家点击座位入座
+  const handleClickSeat = (position) => {
+    if (!isSeated && !players.find(p => p.seatNumber === position)) {
+      console.log('尝试入座在位置:', position);
+      RoomService.seatPlayer(roomId, position)
+        .then(response => {
+          console.log('入座响应:', response);
+          if (response.data && response.data.success) {
+            setCurrentPlayerSeat(position);
+            setIsSeated(true);
+            addSystemMessage(`您已入座在座位 ${position}`);
+            loadGameData();
+          }
+        })
+        .catch(error => {
+          console.error('入座错误:', error);
+          const errorMessage = 
+            (error.response && 
+             error.response.data && 
+             error.response.data.message) || 
+            error.message || 
+            '无法入座，座位可能已被占用';
+          setError(errorMessage);
+        });
     }
   };
   
@@ -1062,20 +1252,30 @@ const GameTable = ({ currentUser }) => {
                 )}
               </div>
               
+              {/* 荷官位置 */}
+              <div className="dealer-position">
+                荷官
+              </div>
+              
               {/* 公共牌 */}
               <div className="community-cards">
-                {communityCards && communityCards.length > 0 ? (
-                  communityCards.map((card, index) => (
-                    <PokerCard key={index} card={card} />
-                  ))
+                {communityCards && communityCards.length > 0 && currentRound !== 'PRE_FLOP' ? (
+                  communityCards.map((card, index) => {
+                    // 根据当前轮次控制显示的卡牌数量
+                    if (
+                      (currentRound === 'FLOP' && index < 3) ||
+                      (currentRound === 'TURN' && index < 4) ||
+                      (currentRound === 'RIVER' || currentRound === 'SHOWDOWN')
+                    ) {
+                      return <PokerCard key={index} card={card} />;
+                    }
+                    return null;
+                  })
                 ) : (
                   <div className="text-center text-white p-3 mb-3">
-                    <h5>等待发牌...</h5>
-                    {isSeated && game && game.id && (
-                      <Button variant="success" onClick={handleDealCards} className="mt-2">
-                        开始发牌
-                      </Button>
-                    )}
+                    <h5>
+                      {currentRound === 'PRE_FLOP' ? '前翻牌阶段 - 等待玩家操作' : '等待发牌...'}
+                    </h5>
                   </div>
                 )}
               </div>
@@ -1107,8 +1307,8 @@ const GameTable = ({ currentUser }) => {
                 }
                 
                 return (
+                  <div key={position} onClick={() => !isSeated && !player && handleClickSeat(position)}>
                   <PlayerSeat
-                    key={position}
                     player={player}
                     position={position}
                     isActive={isActive}
@@ -1118,10 +1318,11 @@ const GameTable = ({ currentUser }) => {
                     isBigBlind={isBigBlind}
                     lastAction={lastAction}
                     betAmount={betAmount}
-                    currentUser={currentUser}
-                    isCurrentUserSeat={isCurrentUserSeat}
-                    playerCards={isCurrentUserSeat ? playerCards : null}
+                      currentUser={currentUser}
+                      isCurrentUserSeat={isCurrentUserSeat}
+                      playerCards={isCurrentUserSeat ? playerCards : null}
                   />
+                  </div>
                 );
               })}
             </div>
@@ -1144,16 +1345,16 @@ const GameTable = ({ currentUser }) => {
             
             {/* 游戏动作 - 只有在入座且当前是自己回合时才显示 */}
             {isSeated && (
-              <GameActions
+            <GameActions
                 gameId={game ? game.id : null}
-                currentRound={currentRound}
-                isPlayerTurn={isCurrentPlayerTurn()}
-                currentBet={currentBet}
-                playerChips={currentPlayer ? currentPlayer.currentChips : 0}
+              currentRound={currentRound}
+              isPlayerTurn={isCurrentPlayerTurn()}
+              currentBet={currentBet}
+              playerChips={currentPlayer ? currentPlayer.currentChips : 0}
                 minRaise={game && game.room ? game.room.smallBlind : 10}
                 timeLeft={roundTimeLeft}
                 onAction={performAction}
-              />
+            />
             )}
             
             {/* 游戏控制按钮 */}
@@ -1169,16 +1370,6 @@ const GameTable = ({ currentUser }) => {
                 </Button>
               ) : (
                 <>
-                  {game && game.id && (
-                    <Button 
-                      variant="primary" 
-                      className="me-2" 
-                      onClick={handleDealCards}
-                      disabled={loading || (communityCards && communityCards.length > 0)}
-                    >
-                      {loading ? '处理中...' : '发牌'}
-                    </Button>
-                  )}
                   <Button 
                     variant="secondary" 
                     className="me-2"

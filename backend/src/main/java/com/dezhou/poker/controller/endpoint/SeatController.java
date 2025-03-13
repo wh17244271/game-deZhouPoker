@@ -1,6 +1,7 @@
 package com.dezhou.poker.controller.endpoint;
 
 import com.dezhou.poker.dto.response.ApiResponse;
+import com.dezhou.poker.entity.PlayerStatus;
 import com.dezhou.poker.entity.Room;
 import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.security.UserPrincipal;
@@ -119,7 +120,7 @@ public class SeatController {
             }
             
             // 更新玩家状态为已入座
-            roomPlayer.setStatus("SEATED");
+            roomPlayer.setStatus(PlayerStatus.SEATED);
             
             // 保存更新
             roomPlayerService.updateById(roomPlayer);

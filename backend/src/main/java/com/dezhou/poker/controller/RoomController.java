@@ -7,6 +7,7 @@ import com.dezhou.poker.entity.GameHistory;
 import com.dezhou.poker.entity.Room;
 import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.entity.User;
+import com.dezhou.poker.entity.PlayerStatus;
 import com.dezhou.poker.exception.BusinessException;
 import com.dezhou.poker.security.UserPrincipal;
 import com.dezhou.poker.service.GameService;
@@ -508,7 +509,7 @@ public class RoomController {
 
             // 更新用户状态为等待，并清除座位号
             existingPlayer.setSeatNumber(null);
-            existingPlayer.setStatusEnum(RoomPlayer.PlayerStatus.WAITING);
+            existingPlayer.setStatus(PlayerStatus.WAITING);
             boolean updated = roomService.updateRoomPlayer(existingPlayer);
             
             if (!updated) {

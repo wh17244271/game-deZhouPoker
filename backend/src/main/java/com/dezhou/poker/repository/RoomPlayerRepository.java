@@ -1,5 +1,6 @@
 package com.dezhou.poker.repository;
 
+import com.dezhou.poker.entity.PlayerStatus;
 import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.entity.RoomPlayerId;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -45,7 +46,7 @@ public interface RoomPlayerRepository extends JpaRepository<RoomPlayer, RoomPlay
      * @param status 状态
      * @return 房间玩家列表
      */
-    List<RoomPlayer> findByRoomIdAndStatus(Long roomId, RoomPlayer.PlayerStatus status);
+    List<RoomPlayer> findByRoomIdAndStatus(Long roomId, PlayerStatus status);
 
     /**
      * 根据房间ID删除所有房间玩家

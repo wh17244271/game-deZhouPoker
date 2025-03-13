@@ -1,8 +1,10 @@
 package com.dezhou.poker.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.dezhou.poker.entity.PlayerStatus;
 import com.dezhou.poker.entity.Room;
 import com.dezhou.poker.entity.RoomPlayer;
 import com.dezhou.poker.entity.User;
@@ -85,7 +87,7 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         roomPlayer.setUserId(userId);
         roomPlayer.setSeatNumber(seatNumber);
         roomPlayer.setCurrentChips(buyIn);
-        roomPlayer.setStatus("WAITING");
+        roomPlayer.setStatus(PlayerStatus.SEATED);
         roomPlayer.setJoinedAt(LocalDateTime.now());
         roomPlayer.setDeleted(0);
 
@@ -151,7 +153,7 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
     public boolean updateStatus(Long roomId, Long userId, String status) {
         try {
             // 将字符串转换为枚举值
-            RoomPlayer.PlayerStatus playerStatus = RoomPlayer.PlayerStatus.valueOf(status);
+            PlayerStatus playerStatus = PlayerStatus.valueOf(status);
             return update(new LambdaUpdateWrapper<RoomPlayer>()
                     .eq(RoomPlayer::getRoomId, roomId)
                     .eq(RoomPlayer::getUserId, userId)

@@ -2,6 +2,7 @@ package com.dezhou.poker.service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.dezhou.poker.exception.ResourceNotFoundException;
 import com.dezhou.poker.entity.*;
 
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.dezhou.poker.entity.PlayerStatus;
 
 /**
  * 游戏服务类
@@ -397,6 +399,13 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
                     .eq(PlayerGameHistory::getUserId, player.getUserId())
                     .set(PlayerGameHistory::getHoleCards, holeCards)
             );
+            
+            // 更新玩家状态为IN_GAME
+            RoomPlayer roomPlayer = roomService.getRoomPlayer(gameHistory.getRoomId(), player.getUserId());
+            if (roomPlayer != null) {
+                roomPlayer.setStatus(PlayerStatus.IN_GAME);
+                roomService.updateRoomPlayer(roomPlayer);
+            }
         }
         
         // 发公共牌（预留5张）
@@ -500,7 +509,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         // 获取房间玩家
         List<RoomPlayer> roomPlayers = roomService.getRoomPlayers(roomId);
         int activePlayers = (int) roomPlayers.stream()
-                .filter(rp -> rp.getStatusEnum() == RoomPlayer.PlayerStatus.PLAYING)
+                .filter(rp -> rp.getStatus() == PlayerStatus.IN_GAME)
                 .count();
         
         result.put("activePlayers", activePlayers);

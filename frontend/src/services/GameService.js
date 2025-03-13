@@ -322,6 +322,33 @@ class GameService {
       { headers: authHeader() }
     );
   }
+
+  /**
+   * 发公共牌
+   * @param {string} gameId - 游戏ID
+   * @param {number} count - 发牌数量
+   * @returns {Promise} - 返回发牌结果的Promise
+   */
+  dealCommunityCards(gameId, count) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/community-cards?count=${count}`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 游戏结算
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回游戏结算结果的Promise
+   */
+  showdown(gameId) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/showdown`,
+      {},
+      { headers: authHeader() }
+    );
+  }
 }
 
 export default new GameService(); 
