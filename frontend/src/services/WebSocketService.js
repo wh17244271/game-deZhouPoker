@@ -30,7 +30,27 @@ class WebSocketService {
 
     // 获取当前用户的认证令牌
     const user = AuthService.getCurrentUser();
-    if (!user || !user.token) {
+    if (!user) {
+      console.error('未找到用户信息，无法连接WebSocket');
+      if (this.callbacks.onError) {
+        this.callbacks.onError('未找到用户信息，无法连接WebSocket');
+      }
+      return;
+    }
+
+    // 尝试从不同的可能位置获取令牌
+    let token = null;
+    if (user.accessToken) {
+      token = user.accessToken;
+    } else if (user.token) {
+      token = user.token;
+    } else if (user.access_token) {
+      token = user.access_token;
+    } else if (user.jwt) {
+      token = user.jwt;
+    }
+
+    if (!token) {
       console.error('未找到认证令牌，无法连接WebSocket');
       if (this.callbacks.onError) {
         this.callbacks.onError('未找到认证令牌，无法连接WebSocket');
@@ -43,11 +63,13 @@ class WebSocketService {
     const wsUrl = `${API_URL}/ws`;
 
     try {
+      console.log('正在连接WebSocket，使用令牌:', token.substring(0, 10) + '...');
+      
       // 创建STOMP客户端
       this.stompClient = new Client({
         webSocketFactory: () => new SockJS(wsUrl),
         connectHeaders: {
-          'Authorization': 'Bearer ' + user.token
+          'Authorization': 'Bearer ' + token
         },
         debug: function (str) {
           // console.log(str);

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Table } from 'react-bootstrap';
 import GameService from '../services/gameService';
 import AuthService from '../services/authService';
+import WebSocketService from '../services/WebSocketService';
 
 const Game = () => {
   const { roomId } = useParams();
@@ -15,9 +16,51 @@ const Game = () => {
   const [myCards, setMyCards] = useState(null);
   const [communityCards, setCommunityCards] = useState(null);
   const [dealLoading, setDealLoading] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   
   // 获取当前用户
   const currentUser = AuthService.getCurrentUser();
+  
+  // 初始化WebSocket连接
+  useEffect(() => {
+    // WebSocket回调函数
+    const wsCallbacks = {
+      onConnect: () => {
+        console.log('WebSocket连接成功');
+        setWsConnected(true);
+      },
+      onDisconnect: () => {
+        console.log('WebSocket连接断开');
+        setWsConnected(false);
+      },
+      onError: (error) => {
+        console.error('WebSocket错误:', error);
+        setError('WebSocket连接错误: ' + (typeof error === 'string' ? error : '连接失败'));
+      },
+      onMessage: (message) => {
+        console.log('收到WebSocket消息:', message);
+        // 根据消息类型处理不同的消息
+        if (message.type === 'GAME_UPDATE') {
+          // 游戏状态更新，刷新游戏数据
+          loadGameData();
+        } else if (message.type === 'DEAL_CARDS') {
+          // 发牌消息，刷新手牌和公共牌
+          if (game && game.id) {
+            loadMyCards(game.id);
+            loadCommunityCards(game.id);
+          }
+        }
+      }
+    };
+    
+    // 连接WebSocket
+    WebSocketService.connect(roomId, wsCallbacks);
+    
+    // 组件卸载时断开WebSocket连接
+    return () => {
+      WebSocketService.disconnect();
+    };
+  }, [roomId]);
   
   // 加载游戏数据
   const loadGameData = () => {
@@ -58,6 +101,18 @@ const Game = () => {
         setLoading(false);
       });
   };
+  
+  // 组件挂载时加载游戏数据
+  useEffect(() => {
+    loadGameData();
+    
+    // 每30秒刷新一次游戏数据（作为WebSocket的备用机制）
+    const interval = setInterval(() => {
+      loadGameData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [roomId]);
   
   // 加载玩家手牌
   const loadMyCards = (gameId) => {
@@ -116,18 +171,6 @@ const Game = () => {
         setDealLoading(false);
       });
   };
-  
-  // 组件挂载时加载游戏数据
-  useEffect(() => {
-    loadGameData();
-    
-    // 每10秒刷新一次游戏数据
-    const interval = setInterval(() => {
-      loadGameData();
-    }, 10000);
-    
-    return () => clearInterval(interval);
-  }, [roomId]);
   
   // 检查当前用户是否是房主
   const isUserRoomOwner = () => {
@@ -214,6 +257,38 @@ const Game = () => {
   return (
     <Container>
       <h2 className="mt-4 mb-4">德州扑克游戏</h2>
+      
+      {/* WebSocket连接状态 */}
+      <div className="mb-3">
+        <Badge bg={wsConnected ? "success" : "danger"}>
+          {wsConnected ? "实时连接已建立" : "实时连接未建立"}
+        </Badge>
+        {!wsConnected && (
+          <Button 
+            variant="outline-primary" 
+            size="sm" 
+            className="ms-2"
+            onClick={() => {
+              WebSocketService.disconnect();
+              WebSocketService.connect(roomId, {
+                onConnect: () => setWsConnected(true),
+                onDisconnect: () => setWsConnected(false),
+                onError: (error) => setError('WebSocket连接错误: ' + (typeof error === 'string' ? error : '连接失败')),
+                onMessage: (message) => {
+                  console.log('收到WebSocket消息:', message);
+                  if (message.type === 'GAME_UPDATE') loadGameData();
+                  else if (message.type === 'DEAL_CARDS' && game && game.id) {
+                    loadMyCards(game.id);
+                    loadCommunityCards(game.id);
+                  }
+                }
+              });
+            }}
+          >
+            重新连接
+          </Button>
+        )}
+      </div>
       
       <Row>
         <Col md={8}>

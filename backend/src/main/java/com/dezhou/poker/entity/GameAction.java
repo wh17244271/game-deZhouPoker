@@ -131,7 +131,8 @@ public class GameAction implements Serializable {
         PRE_FLOP,   // 翻牌前
         FLOP,       // 翻牌
         TURN,       // 转牌
-        RIVER       // 河牌
+        RIVER,      // 河牌
+        SHOWDOWN    // 摊牌
     }
 
     /**

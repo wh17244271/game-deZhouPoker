@@ -82,12 +82,48 @@ class RoomService {
   }
 
   /**
-   * 获取房间内的玩家
+   * 玩家入座
    * @param {string} roomId - 房间ID
-   * @returns {Promise} - 返回房间内玩家的Promise
+   * @param {number} seatNumber - 座位号，如果为null则自动分配座位
+   * @returns {Promise} - 返回入座结果的Promise
+   */
+  seatPlayer(roomId, seatNumber = null) {
+    return axios.post(
+      `${API_URL}/rooms/${roomId}/seat`,
+      { seatNumber },
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 离开座位但留在房间
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回操作结果的Promise
+   */
+  leaveTable(roomId) {
+    return axios.post(
+      `${API_URL}/rooms/${roomId}/leave-table`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 获取房间玩家列表
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回玩家列表的Promise
    */
   getRoomPlayers(roomId) {
     return axios.get(`${API_URL}/rooms/${roomId}/players`, { headers: authHeader() });
+  }
+
+  /**
+   * 获取当前用户在房间的状态信息
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回用户在房间的状态
+   */
+  getUserRoomStatus(roomId) {
+    return axios.get(`${API_URL}/rooms/${roomId}/my-status`, { headers: authHeader() });
   }
 
   /**

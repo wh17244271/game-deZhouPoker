@@ -199,6 +199,129 @@ class GameService {
   getCommunityCards(gameId) {
     return axios.get(`${API_URL}/games/${gameId}/community-cards`, { headers: authHeader() });
   }
+
+  /**
+   * 管理房间游戏状态
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回游戏状态管理结果的Promise
+   */
+  manageRoomGameState(roomId) {
+    return axios.post(`${API_URL}/games/room/${roomId}/manage`, {}, { headers: authHeader() });
+  }
+
+  /**
+   * 处理玩家离开座位
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回处理结果的Promise
+   */
+  handlePlayerLeave(roomId) {
+    return axios.post(`${API_URL}/games/room/${roomId}/leave`, {}, { headers: authHeader() });
+  }
+
+  /**
+   * 自动发牌
+   * @param {string} roomId - 房间ID
+   * @returns {Promise} - 返回发牌结果的Promise
+   */
+  autoDealCards(roomId) {
+    return axios.post(`${API_URL}/games/room/${roomId}/auto-deal`, {}, { headers: authHeader() });
+  }
+
+  /**
+   * 检查游戏结束条件
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回检查结果的Promise
+   */
+  checkGameEndCondition(gameId) {
+    return axios.post(`${API_URL}/games/${gameId}/check-end`, {}, { headers: authHeader() });
+  }
+
+  /**
+   * 设置庄家位置
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回设置结果的Promise
+   */
+  setDealerPosition(gameId) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/set-dealer`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 设置游戏计时器
+   * @param {string} gameId - 游戏ID
+   * @param {number} timePerRound - 每轮时间（秒）
+   * @returns {Promise} - 返回设置结果的Promise
+   */
+  setGameTimer(gameId, timePerRound = 30) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/set-timer?timePerRound=${timePerRound}`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 执行游戏动作
+   * @param {string} gameId - 游戏ID
+   * @param {string} actionType - 动作类型：CHECK（过牌）、CALL（跟注）、BET（下注）、RAISE（加注）、FOLD（弃牌）、ALL_IN（全押）
+   * @param {number} amount - 下注金额
+   * @returns {Promise} - 返回执行结果的Promise
+   */
+  performAction(gameId, actionType, amount = 0) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/actions`,
+      { actionType, amount },
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 获取当前玩家回合信息
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回当前回合信息的Promise
+   */
+  getCurrentTurnInfo(gameId) {
+    return axios.get(`${API_URL}/games/${gameId}/current-turn`, { headers: authHeader() });
+  }
+
+  /**
+   * 向下一轮进发
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回下一轮信息的Promise
+   */
+  advanceToNextRound(gameId) {
+    return axios.post(
+      `${API_URL}/games/${gameId}/next-round`,
+      {},
+      { headers: authHeader() }
+    );
+  }
+
+  /**
+   * 获取游戏配置信息
+   * @param {string} gameId - 游戏ID
+   * @returns {Promise} - 返回游戏配置信息的Promise
+   */
+  getGameSettings(gameId) {
+    return axios.get(`${API_URL}/games/${gameId}/settings`, { headers: authHeader() });
+  }
+
+  /**
+   * 更新游戏配置
+   * @param {string} gameId - 游戏ID
+   * @param {Object} settings - 游戏配置对象
+   * @returns {Promise} - 返回更新结果的Promise
+   */
+  updateGameSettings(gameId, settings) {
+    return axios.put(
+      `${API_URL}/games/${gameId}/settings`,
+      settings,
+      { headers: authHeader() }
+    );
+  }
 }
 
 export default new GameService(); 

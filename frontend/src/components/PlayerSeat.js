@@ -1,62 +1,64 @@
 import React from 'react';
-import Card from './Card';
 import './PlayerSeat.css';
+import PokerCard from './PokerCard';
 
-const PlayerSeat = ({ 
-  player, 
-  position, 
-  isActive = false, 
-  isCurrent = false, 
-  isDealer = false,
-  isSmallBlind = false,
-  isBigBlind = false,
-  lastAction = null,
-  betAmount = 0,
-  currentUser
+const PlayerSeat = ({
+  player,
+  position,
+  isActive,
+  isCurrent,
+  isDealer,
+  isSmallBlind,
+  isBigBlind,
+  lastAction,
+  betAmount,
+  currentUser,
+  isCurrentUserSeat,
+  playerCards
 }) => {
-  // 计算座位位置样式
-  const getPositionStyle = () => {
+  // 确定座位的位置样式
+  const getSeatPositionStyle = (position) => {
     const positions = {
-      1: { top: '75%', left: '50%' },
-      2: { top: '85%', left: '30%' },
-      3: { top: '75%', left: '10%' },
-      4: { top: '50%', left: '5%' },
-      5: { top: '25%', left: '10%' },
-      6: { top: '15%', left: '30%' },
-      7: { top: '15%', left: '70%' },
-      8: { top: '25%', left: '90%' },
-      9: { top: '50%', left: '95%' },
+      1: { bottom: '10%', left: '40%' },
+      2: { bottom: '20%', left: '15%' },
+      3: { bottom: '50%', left: '5%' },
+      4: { top: '20%', left: '15%' },
+      5: { top: '10%', left: '40%' },
+      6: { top: '10%', right: '40%' },
+      7: { top: '20%', right: '15%' },
+      8: { bottom: '50%', right: '5%' },
+      9: { bottom: '20%', right: '15%' }
     };
-
-    return positions[position] || { top: '50%', left: '50%' };
-  };
-
-  // 获取动作标签样式
-  const getActionBadgeClass = () => {
-    if (!lastAction) return '';
     
-    switch (lastAction) {
+    return positions[position] || {};
+  };
+  
+  // 确定玩家的动作标签样式
+  const getActionBadgeVariant = (action) => {
+    if (!action) return 'secondary';
+    
+    switch (action) {
       case 'FOLD':
-        return 'bg-secondary';
+        return 'danger';
       case 'CHECK':
-        return 'bg-info';
+        return 'info';
       case 'CALL':
-        return 'bg-primary';
+        return 'primary';
       case 'BET':
       case 'RAISE':
-        return 'bg-warning text-dark';
+        return 'success';
       case 'ALL_IN':
-        return 'bg-danger';
+        return 'warning';
       default:
-        return 'bg-light text-dark';
+        return 'secondary';
     }
   };
-
-  // 获取动作显示文本
-  const getActionText = () => {
-    if (!lastAction) return '';
+  
+  // 确定玩家的动作标签文本
+  const getActionBadgeText = (action) => {
+    if (!action) return '';
     
-    switch (lastAction) {
+    switch (action) {
       case 'FOLD':
         return '弃牌';
       case 'CHECK':
@@ -68,66 +70,93 @@ const PlayerSeat = ({
       case 'RAISE':
         return '加注';
       case 'ALL_IN':
-        return '全下';
+        return '全押';
       default:
-        return lastAction;
+        return action;
     }
   };
-
-  if (!player) {
-    return (
-      <div 
-        className="player-seat empty" 
-        style={getPositionStyle()}
-      >
-        <div className="seat-number">{position}</div>
-        <div className="seat-label">空座位</div>
-      </div>
-    );
-  }
-
+  
+  // 确定座位的状态样式
+  const getSeatStatusClass = () => {
+    let className = 'player-seat';
+    
+    if (player) {
+      if (isActive) {
+        className += ' active-seat';
+      }
+      
+      if (isCurrent) {
+        className += ' current-turn';
+      }
+      
+      if (isCurrentUserSeat) {
+        className += ' current-user-seat';
+      }
+    } else {
+      className += ' empty-seat';
+    }
+    
+    return className;
+  };
+  
   return (
     <div 
-      className={`player-seat ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}`}
-      style={getPositionStyle()}
+      className={getSeatStatusClass()}
+      style={getSeatPositionStyle(position)}
     >
-      <div className="player-info">
-        <div className="player-name">{player.user.username}</div>
-        <div className="player-chips">{player.currentChips}</div>
-        
-        {/* 玩家角色标识 */}
-        <div className="player-roles">
-          {isDealer && <span className="dealer-button">D</span>}
-          {isSmallBlind && <span className="small-blind">SB</span>}
-          {isBigBlind && <span className="big-blind">BB</span>}
-        </div>
-        
-        {/* 玩家动作 */}
-        {lastAction && (
-          <div className={`player-action badge ${getActionBadgeClass()}`}>
-            {getActionText()}
-            {(lastAction === 'BET' || lastAction === 'RAISE' || lastAction === 'CALL' || lastAction === 'ALL_IN') && 
-              betAmount > 0 && ` ${betAmount}`}
-          </div>
-        )}
-      </div>
+      {/* 座位位置标记 */}
+      <div className="seat-position-label">{position}</div>
       
-      {/* 玩家手牌 */}
-      {player.cards && player.cards.length > 0 ? (
-        <div className="player-cards">
-          {player.cards.map((card, index) => (
-            <Card 
-              key={index} 
-              card={card} 
-              hidden={!player.showCards && player.user.id !== currentUser?.userId}
-            />
-          ))}
-        </div>
+      {player ? (
+        <>
+          {/* 玩家信息 */}
+          <div className="player-info">
+            <div className="player-name">
+              {player.user?.username || '玩家 ' + position}
+              {isCurrentUserSeat && <span className="text-warning ml-1">(我)</span>}
+            </div>
+            <div className="player-chips">{player.currentChips || 0}</div>
+          </div>
+          
+          {/* 玩家角色标记 */}
+          <div className="player-roles">
+            {isDealer && <span className="badge bg-info role-badge">D</span>}
+            {isSmallBlind && <span className="badge bg-warning role-badge">SB</span>}
+            {isBigBlind && <span className="badge bg-danger role-badge">BB</span>}
+          </div>
+          
+          {/* 玩家动作 */}
+          {lastAction && (
+            <div className="player-action">
+              <span className={`badge bg-${getActionBadgeVariant(lastAction)}`}>
+                {getActionBadgeText(lastAction)}
+                {betAmount > 0 && ` ${betAmount}`}
+              </span>
+            </div>
+          )}
+          
+          {/* 玩家手牌 - 只对当前用户显示 */}
+          {isCurrentUserSeat && playerCards && playerCards.length > 0 && (
+            <div className="player-hand">
+              {playerCards.map((card, index) => (
+                <div key={index} className="player-card">
+                  <PokerCard card={card} small={true} />
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* 其他玩家的牌背 */}
+          {!isCurrentUserSeat && player.holeCards && (
+            <div className="player-hand">
+              <div className="player-card card-back" />
+              <div className="player-card card-back" />
+            </div>
+          )}
+        </>
       ) : (
-        <div className="player-cards">
-          <div className="card card-placeholder"></div>
-          <div className="card card-placeholder"></div>
-        </div>
+        // 空座位
+        <div className="empty-seat-label">空座位</div>
       )}
     </div>
   );

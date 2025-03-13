@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.HashMap;
+import java.util.Arrays;
 
 /**
  * 游戏服务类
@@ -358,9 +359,14 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
             String card2 = deck[cardIndex++];
             String holeCards = card1 + "," + card2;
             
-            // 更新玩家手牌
-            player.setHoleCards(holeCards);
-            playerGameHistoryMapper.updateById(player);
+            // 使用LambdaUpdateWrapper来更新玩家手牌
+            playerGameHistoryMapper.update(
+                null,
+                new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<PlayerGameHistory>()
+                    .eq(PlayerGameHistory::getGameId, player.getGameId())
+                    .eq(PlayerGameHistory::getUserId, player.getUserId())
+                    .set(PlayerGameHistory::getHoleCards, holeCards)
+            );
         }
         
         // 发公共牌（预留5张）
@@ -438,5 +444,315 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
             deck[i] = deck[j];
             deck[j] = temp;
         }
+    }
+
+    /**
+     * 处理房间游戏状态
+     * 根据房间人数和游戏状态自动管理游戏
+     *
+     * @param roomId 房间ID
+     * @return 更新后的游戏状态
+     */
+    @Transactional
+    public Map<String, Object> manageRoomGameState(Long roomId) {
+        Room room = roomService.getById(roomId);
+        if (room == null) {
+            throw new IllegalStateException("房间不存在");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("roomId", roomId);
+        result.put("action", "NO_ACTION");
+
+        // 获取当前游戏
+        GameHistory currentGame = getCurrentGame(roomId);
+        
+        // 获取房间玩家
+        List<RoomPlayer> roomPlayers = roomService.getRoomPlayers(roomId);
+        int activePlayers = (int) roomPlayers.stream()
+                .filter(rp -> rp.getStatusEnum() == RoomPlayer.PlayerStatus.PLAYING)
+                .count();
+        
+        result.put("activePlayers", activePlayers);
+        result.put("minPlayers", room.getMinPlayers());
+        
+        // 检查游戏状态
+        if (currentGame == null) {
+            // 没有进行中的游戏，检查是否可以开始新游戏
+            if (activePlayers >= room.getMinPlayers()) {
+                // 人数足够，开始新游戏
+                GameHistory newGame = startNewGame(roomId);
+                result.put("action", "GAME_STARTED");
+                result.put("gameId", newGame.getId());
+                
+                // 自动发牌
+                try {
+                    Map<String, Object> dealResult = dealCards(newGame.getId());
+                    result.put("dealResult", dealResult);
+                    result.put("action", "GAME_STARTED_AND_DEALT");
+                } catch (Exception e) {
+                    result.put("dealError", e.getMessage());
+                }
+            } else {
+                // 人数不足，等待更多玩家
+                result.put("action", "WAITING_FOR_PLAYERS");
+                result.put("playersNeeded", room.getMinPlayers() - activePlayers);
+            }
+        } else {
+            // 已有进行中的游戏
+            result.put("gameId", currentGame.getId());
+            result.put("gameStatus", currentGame.getStatusEnum());
+            
+            // 检查玩家手牌
+            List<PlayerGameHistory> gamePlayers = getGamePlayers(currentGame.getId());
+            boolean allPlayersHaveCards = gamePlayers.stream()
+                    .allMatch(player -> player.getHoleCards() != null && !player.getHoleCards().isEmpty());
+            
+            if (!allPlayersHaveCards && activePlayers >= room.getMinPlayers()) {
+                // 需要发牌
+                try {
+                    Map<String, Object> dealResult = dealCards(currentGame.getId());
+                    result.put("dealResult", dealResult);
+                    result.put("action", "CARDS_DEALT");
+                } catch (Exception e) {
+                    result.put("dealError", e.getMessage());
+                }
+            } else if (currentGame.getStatusEnum() == GameHistory.GameStatus.FINISHED) {
+                // 游戏已结束，检查是否可以开始新游戏
+                if (activePlayers >= room.getMinPlayers()) {
+                    // 人数足够，开始新游戏
+                    GameHistory newGame = startNewGame(roomId);
+                    result.put("action", "NEW_GAME_STARTED");
+                    result.put("gameId", newGame.getId());
+                    
+                    // 自动发牌
+                    try {
+                        Map<String, Object> dealResult = dealCards(newGame.getId());
+                        result.put("dealResult", dealResult);
+                        result.put("action", "NEW_GAME_STARTED_AND_DEALT");
+                    } catch (Exception e) {
+                        result.put("dealError", e.getMessage());
+                    }
+                } else {
+                    // 人数不足，等待更多玩家
+                    result.put("action", "GAME_FINISHED_WAITING_FOR_PLAYERS");
+                    result.put("playersNeeded", room.getMinPlayers() - activePlayers);
+                }
+            } else {
+                // 游戏进行中
+                result.put("action", "GAME_IN_PROGRESS");
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 处理玩家离开座位
+     * 将玩家在当前游戏中的状态设置为自动弃牌
+     *
+     * @param roomId 房间ID
+     * @param userId 用户ID
+     * @return 处理结果
+     */
+    @Transactional
+    public Map<String, Object> handlePlayerLeave(Long roomId, Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("roomId", roomId);
+        result.put("userId", userId);
+        result.put("action", "NO_ACTION");
+        
+        // 获取当前游戏
+        GameHistory currentGame = getCurrentGame(roomId);
+        if (currentGame == null) {
+            // 没有进行中的游戏，无需处理
+            result.put("action", "NO_GAME_IN_PROGRESS");
+            return result;
+        }
+        
+        // 检查玩家是否在当前游戏中
+        PlayerGameHistory playerGame = playerGameHistoryMapper.selectById(new PlayerGameHistoryId(currentGame.getId(), userId));
+        if (playerGame == null) {
+            // 玩家不在当前游戏中，无需处理
+            result.put("action", "PLAYER_NOT_IN_GAME");
+            return result;
+        }
+        
+        // 记录玩家弃牌动作
+        try {
+            GameAction foldAction = new GameAction();
+            foldAction.setGameId(currentGame.getId());
+            foldAction.setUserId(userId);
+            foldAction.setActionTypeEnum(GameAction.ActionType.FOLD);
+            foldAction.setAmount(BigDecimal.ZERO);
+            
+            // 获取当前轮次
+            String roundStr = currentGame.getCurrentRound() != null 
+                ? currentGame.getCurrentRound().toString() 
+                : "PRE_FLOP";
+            GameAction.GameRound round = GameAction.GameRound.valueOf(roundStr);
+            foldAction.setRoundEnum(round);
+            
+            foldAction.setActionTime(LocalDateTime.now());
+            gameActionMapper.insert(foldAction);
+            
+            result.put("action", "PLAYER_AUTO_FOLDED");
+        } catch (Exception e) {
+            result.put("action", "ERROR_FOLDING");
+            result.put("error", e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 检查游戏是否需要结束
+     * 当只剩一名玩家或所有玩家都完成当前轮次动作时结束游戏
+     *
+     * @param gameId 游戏ID
+     * @return 游戏是否结束
+     */
+    @Transactional
+    public boolean checkGameEndCondition(Long gameId) {
+        GameHistory game = getById(gameId);
+        if (game == null || game.getStatusEnum() == GameHistory.GameStatus.FINISHED) {
+            return false;
+        }
+        
+        // 获取游戏玩家
+        List<PlayerGameHistory> players = getGamePlayers(gameId);
+        
+        // 获取未弃牌的玩家
+        List<PlayerGameHistory> activePlayers = players.stream()
+                .filter(p -> {
+                    List<GameAction> playerActions = gameActionMapper.selectList(
+                        new QueryWrapper<GameAction>()
+                            .eq("game_id", gameId)
+                            .eq("user_id", p.getUserId())
+                            .eq("action_type", GameAction.ActionType.FOLD.name())
+                    );
+                    return playerActions.isEmpty(); // 没有弃牌动作的玩家
+                })
+                .collect(Collectors.toList());
+        
+        // 检查是否只剩一名玩家
+        if (activePlayers.size() <= 1) {
+            // 只剩一名玩家，结束游戏
+            if (activePlayers.size() == 1) {
+                // 设置获胜者
+                PlayerGameHistory winner = activePlayers.get(0);
+                
+                // 计算奖池
+                BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
+                
+                // 更新获胜者信息
+                updateWinner(gameId, winner.getUserId(), potSize, "Last Player Standing");
+            }
+            
+            // 更新游戏状态
+            game.setStatusEnum(GameHistory.GameStatus.FINISHED);
+            game.setEndTime(LocalDateTime.now());
+            updateById(game);
+            
+            return true;
+        }
+        
+        // 检查当前轮次是否所有玩家都已行动
+        String currentRoundStr = game.getCurrentRound() != null 
+            ? game.getCurrentRound().toString() 
+            : "PRE_FLOP";
+        boolean allPlayersActed = true;
+        BigDecimal currentBet = BigDecimal.ZERO;
+        
+        // 获取当前轮次的下注动作
+        List<GameAction> betActions = gameActionMapper.selectList(
+            new QueryWrapper<GameAction>()
+                .eq("game_id", gameId)
+                .eq("round", currentRoundStr)
+                .in("action_type", Arrays.asList(
+                    GameAction.ActionType.BET.name(), 
+                    GameAction.ActionType.RAISE.name())
+                )
+                .orderByDesc("action_time")
+        );
+        
+        if (!betActions.isEmpty()) {
+            currentBet = betActions.get(0).getAmount();
+        }
+        
+        // 检查每个活跃玩家的最后一个动作
+        for (PlayerGameHistory player : activePlayers) {
+            List<GameAction> playerRoundActions = gameActionMapper.selectList(
+                new QueryWrapper<GameAction>()
+                    .eq("game_id", gameId)
+                    .eq("user_id", player.getUserId())
+                    .eq("round", currentRoundStr)
+                    .orderByDesc("action_time")
+            );
+            
+            if (playerRoundActions.isEmpty()) {
+                // 玩家在当前轮次没有行动
+                allPlayersActed = false;
+                break;
+            }
+            
+            GameAction lastAction = playerRoundActions.get(0);
+            if (lastAction.getActionTypeEnum() == GameAction.ActionType.BET 
+                || lastAction.getActionTypeEnum() == GameAction.ActionType.RAISE) {
+                // 最后一个动作是下注或加注，其他玩家可能需要跟注
+                continue;
+            }
+            
+            if (lastAction.getActionTypeEnum() == GameAction.ActionType.CALL) {
+                // 最后一个动作是跟注，检查金额是否匹配当前最高下注
+                if (lastAction.getAmount().compareTo(currentBet) != 0) {
+                    allPlayersActed = false;
+                    break;
+                }
+            }
+            
+            if (lastAction.getActionTypeEnum() == GameAction.ActionType.CHECK 
+                && currentBet.compareTo(BigDecimal.ZERO) > 0) {
+                // 如果有人下注，但玩家选择了过牌（应该是不合法的），视为未完成行动
+                allPlayersActed = false;
+                break;
+            }
+        }
+        
+        if (allPlayersActed) {
+            // 所有玩家都已行动，进入下一轮或结束游戏
+            if ("PRE_FLOP".equals(currentRoundStr)) {
+                // 翻牌前阶段完成，进入翻牌阶段
+                game.setCurrentRound(GameAction.GameRound.FLOP.ordinal());
+                updateById(game);
+            } else if ("FLOP".equals(currentRoundStr)) {
+                // 翻牌阶段完成，进入转牌阶段
+                game.setCurrentRound(GameAction.GameRound.TURN.ordinal());
+                updateById(game);
+            } else if ("TURN".equals(currentRoundStr)) {
+                // 转牌阶段完成，进入河牌阶段
+                game.setCurrentRound(GameAction.GameRound.RIVER.ordinal());
+                updateById(game);
+            } else if ("RIVER".equals(currentRoundStr)) {
+                // 河牌阶段完成，进入摊牌阶段并结束游戏
+                game.setCurrentRound(GameAction.GameRound.SHOWDOWN.ordinal());
+                game.setStatusEnum(GameHistory.GameStatus.FINISHED);
+                game.setEndTime(LocalDateTime.now());
+                updateById(game);
+                
+                // 这里应该有摊牌和确定获胜者的逻辑
+                // 简化处理：计算奖池并按比例分配给未弃牌的玩家
+                BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
+                BigDecimal share = potSize.divide(new BigDecimal(activePlayers.size()), 2, BigDecimal.ROUND_DOWN);
+                
+                for (PlayerGameHistory player : activePlayers) {
+                    updateWinner(gameId, player.getUserId(), share, "Showdown");
+                }
+                
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

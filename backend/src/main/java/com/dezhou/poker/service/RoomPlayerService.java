@@ -69,4 +69,22 @@ public interface RoomPlayerService extends IService<RoomPlayer> {
      * @return 是否成功
      */
     boolean updateChips(Long roomId, Long userId, BigDecimal amount);
+
+    /**
+     * 为玩家分配座位
+     *
+     * @param roomId 房间ID
+     * @param userId 用户ID
+     * @param seatNumber 座位号（可为空，自动分配）
+     * @return 更新后的房间玩家对象
+     */
+    RoomPlayer assignSeat(Long roomId, Long userId, Integer seatNumber);
+
+    /**
+     * 获取特定房间内特定用户的信息
+     * @param roomId 房间ID
+     * @param userId 用户ID
+     * @return 房间玩家信息
+     */
+    RoomPlayer getRoomPlayer(Long roomId, Long userId);
 } 

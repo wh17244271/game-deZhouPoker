@@ -1,7 +1,8 @@
 /**
  * 扑克牌工具类
+ * 提供德州扑克游戏中常用的牌型和功能
  */
-class PokerUtils {
+export default class PokerUtils {
   // 花色定义
   static SUITS = {
     'S': { name: '黑桃', symbol: '♠', color: 'black' },
@@ -71,34 +72,193 @@ class PokerUtils {
   }
 
   /**
-   * 解析多张牌
-   * @param {string} cardsStr - 多张牌的字符串表示，例如 "AS,KH,QD"
-   * @returns {Array} - 解析后的牌对象数组
+   * 解析扑克牌字符串为数组
+   * @param {string} cardsStr - 扑克牌字符串，如 "AH,KD,QC"
+   * @returns {Array} - 扑克牌数组
    */
   static parseCards(cardsStr) {
-    if (!cardsStr) {
-      return [];
-    }
-
-    // 如果是数组，直接返回
-    if (Array.isArray(cardsStr)) {
-      return cardsStr.map(card => typeof card === 'string' ? this.parseCard(card) : card);
-    }
-
-    // 分割字符串并解析每张牌
-    return cardsStr.split(',').map(card => this.parseCard(card.trim())).filter(card => card !== null);
+    if (!cardsStr) return [];
+    
+    // 移除所有空格并按逗号分割
+    return cardsStr.replace(/\s/g, '').split(',').filter(card => card.trim());
   }
 
   /**
-   * 获取牌型名称
+   * 获取牌型文本描述
    * @param {string} handType - 牌型代码
-   * @returns {string} - 牌型名称
+   * @returns {string} - 牌型文本描述
    */
-  static getHandTypeName(handType) {
-    if (!handType || !this.HAND_TYPES[handType]) {
-      return '未知牌型';
+  static getHandTypeText(handType) {
+    if (!handType) return '未知牌型';
+    
+    const handTypes = {
+      'HIGH_CARD': '高牌',
+      'ONE_PAIR': '一对',
+      'TWO_PAIR': '两对',
+      'THREE_OF_A_KIND': '三条',
+      'STRAIGHT': '顺子',
+      'FLUSH': '同花',
+      'FULL_HOUSE': '葫芦',
+      'FOUR_OF_A_KIND': '四条',
+      'STRAIGHT_FLUSH': '同花顺',
+      'ROYAL_FLUSH': '皇家同花顺'
+    };
+    
+    return handTypes[handType] || handType;
+  }
+
+  /**
+   * 比较两张牌的大小
+   * @param {string} card1 - 第一张牌
+   * @param {string} card2 - 第二张牌
+   * @returns {number} - 比较结果：1表示card1大，-1表示card2大，0表示相等
+   */
+  static compareCards(card1, card2) {
+    if (!card1 || !card2) return 0;
+    
+    const ranks = '23456789TJQKA';
+    const rank1 = card1.charAt(0);
+    const rank2 = card2.charAt(0);
+    
+    const rankIndex1 = ranks.indexOf(rank1);
+    const rankIndex2 = ranks.indexOf(rank2);
+    
+    if (rankIndex1 > rankIndex2) return 1;
+    if (rankIndex1 < rankIndex2) return -1;
+    return 0;
+  }
+
+  /**
+   * 按照牌面大小排序
+   * @param {Array} cards - 扑克牌数组
+   * @returns {Array} - 排序后的扑克牌数组
+   */
+  static sortCardsByRank(cards) {
+    if (!cards || !Array.isArray(cards)) return [];
+    
+    const sortedCards = [...cards];
+    sortedCards.sort((a, b) => this.compareCards(b, a)); // 降序排列
+    
+    return sortedCards;
+  }
+
+  /**
+   * 获取牌的点数
+   * @param {string} card - 扑克牌字符串
+   * @returns {string} - 扑克牌点数
+   */
+  static getCardRank(card) {
+    if (!card || card.length < 2) return '';
+    return card.charAt(0);
+  }
+
+  /**
+   * 获取牌的花色
+   * @param {string} card - 扑克牌字符串
+   * @returns {string} - 扑克牌花色
+   */
+  static getCardSuit(card) {
+    if (!card || card.length < 2) return '';
+    return card.charAt(1);
+  }
+
+  /**
+   * 获取花色的Unicode符号
+   * @param {string} suit - 花色字符
+   * @returns {string} - 花色Unicode符号
+   */
+  static getSuitSymbol(suit) {
+    const symbols = {
+      'H': '♥',
+      'D': '♦',
+      'C': '♣',
+      'S': '♠'
+    };
+    
+    return symbols[suit] || suit;
+  }
+
+  /**
+   * 获取花色的颜色
+   * @param {string} suit - 花色字符
+   * @returns {string} - 颜色名称
+   */
+  static getSuitColor(suit) {
+    if (suit === 'H' || suit === 'D') {
+      return 'red';
     }
-    return this.HAND_TYPES[handType].name;
+    return 'black';
+  }
+
+  /**
+   * 格式化牌面展示
+   * @param {string} card - 扑克牌字符串
+   * @returns {string} - 格式化后的牌面文本
+   */
+  static formatCard(card) {
+    if (!card || card.length < 2) return '';
+    
+    const rank = this.getCardRank(card);
+    const suit = this.getCardSuit(card);
+    const symbol = this.getSuitSymbol(suit);
+    
+    let displayRank = rank;
+    if (rank === 'T') displayRank = '10';
+    
+    return `${displayRank}${symbol}`;
+  }
+
+  /**
+   * 检查是否是同花
+   * @param {Array} cards - 扑克牌数组
+   * @returns {boolean} - 是否是同花
+   */
+  static isFlush(cards) {
+    if (!cards || cards.length < 5) return false;
+    
+    const suits = new Set();
+    cards.forEach(card => {
+      suits.add(this.getCardSuit(card));
+    });
+    
+    return suits.size === 1;
+  }
+
+  /**
+   * 检查是否是顺子
+   * @param {Array} cards - 扑克牌数组
+   * @returns {boolean} - 是否是顺子
+   */
+  static isStraight(cards) {
+    if (!cards || cards.length < 5) return false;
+    
+    const sortedCards = this.sortCardsByRank(cards);
+    const ranks = sortedCards.map(card => this.getCardRank(card));
+    
+    // 将扑克牌点数转换为数值
+    const valueMap = {
+      '2': 2, '3': 3, '4': 4, '5': 5, '6': 6,
+      '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 11,
+      'Q': 12, 'K': 13, 'A': 14
+    };
+    
+    // 处理A可以作为1的特殊情况
+    if (ranks.includes('A') && ranks.includes('2') && ranks.includes('3') && 
+        ranks.includes('4') && ranks.includes('5')) {
+      return true;
+    }
+    
+    // 检查是否连续
+    const values = ranks.map(rank => valueMap[rank]);
+    values.sort((a, b) => b - a); // 降序排列
+    
+    for (let i = 1; i < values.length; i++) {
+      if (values[i - 1] - values[i] !== 1) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   /**
@@ -130,6 +290,4 @@ class PokerUtils {
     
     return cards;
   }
-}
-
-export default PokerUtils; 
+} 

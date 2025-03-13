@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -84,4 +85,19 @@ public interface RoomService extends IService<Room> {
      * @return 密码是否正确
      */
     boolean checkPassword(Long roomId, String password);
+
+    /**
+     * 获取房间中特定用户的信息
+     * @param roomId 房间ID
+     * @param userId 用户ID
+     * @return 房间玩家信息
+     */
+    RoomPlayer getRoomPlayer(Long roomId, Long userId);
+
+    /**
+     * 更新房间玩家信息
+     * @param roomPlayer 房间玩家信息
+     * @return 是否更新成功
+     */
+    boolean updateRoomPlayer(RoomPlayer roomPlayer);
 }

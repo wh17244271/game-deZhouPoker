@@ -1,6 +1,5 @@
 package com.dezhou.poker.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -14,26 +13,19 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    @Value("${websocket.endpoint}")
-    private String endpoint;
-
-    @Value("${websocket.allowed-origins}")
-    private String allowedOrigins;
-
     @Override
-    public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint(endpoint)
-                .setAllowedOrigins(allowedOrigins)
-                .withSockJS();
+    public void configureMessageBroker(MessageBrokerRegistry config) {
+        config.enableSimpleBroker("/topic", "/queue");
+        config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // 客户端订阅前缀
-        registry.enableSimpleBroker("/topic", "/queue");
-        // 客户端发送消息前缀
-        registry.setApplicationDestinationPrefixes("/app");
-        // 用户订阅前缀
-        registry.setUserDestinationPrefix("/user");
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // 修复CORS配置
+        // 不要使用通配符*与allowCredentials(true)组合
+        // 而是明确指定允许的源
+        registry.addEndpoint("/ws")
+            .setAllowedOrigins("http://localhost:3000", "http://localhost:8080", "http://localhost:8000")
+            .withSockJS();
     }
 }

@@ -19,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 房间玩家服务实现类
@@ -180,5 +182,80 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
                 .eq(RoomPlayer::getRoomId, roomId)
                 .eq(RoomPlayer::getUserId, userId)
                 .set(RoomPlayer::getCurrentChips, newChips));
+    }
+
+    /**
+     * 为用户分配座位
+     * @param roomId 房间ID
+     * @param userId 用户ID
+     * @param seatNumber 座位号，如果为null则自动分配
+     * @return 分配的座位号
+     */
+    @Override
+    public RoomPlayer assignSeat(Long roomId, Long userId, Integer seatNumber) {
+        // 获取用户在房间中的信息
+        RoomPlayer roomPlayer = this.getBaseMapper().selectOne(
+            new LambdaQueryWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomId)
+                .eq(RoomPlayer::getUserId, userId)
+        );
+        
+        if (roomPlayer == null) {
+            throw new BusinessException("用户不在该房间中");
+        }
+        
+        // 如果指定了座位号，检查是否已被占用
+        if (seatNumber != null) {
+            RoomPlayer existingSeat = this.getBaseMapper().selectOne(
+                new LambdaQueryWrapper<RoomPlayer>()
+                    .eq(RoomPlayer::getRoomId, roomId)
+                    .eq(RoomPlayer::getSeatNumber, seatNumber)
+                    .ne(RoomPlayer::getUserId, userId)
+            );
+            
+            if (existingSeat != null) {
+                throw new BusinessException("座位已被占用");
+            }
+        } else {
+            // 如果未指定座位号，自动分配一个座位
+            List<RoomPlayer> seatedPlayers = this.getBaseMapper().selectList(
+                new LambdaQueryWrapper<RoomPlayer>()
+                    .eq(RoomPlayer::getRoomId, roomId)
+                    .isNotNull(RoomPlayer::getSeatNumber)
+            );
+            
+            Set<Integer> occupiedSeats = seatedPlayers.stream()
+                .map(RoomPlayer::getSeatNumber)
+                .collect(Collectors.toSet());
+            
+            // 获取房间信息，以确定最大座位数
+            Room room = roomService.getById(roomId);
+            int maxSeats = room != null && room.getMaxPlayers() != null ? room.getMaxPlayers() : 9;
+            
+            // 寻找空闲的座位
+            for (int i = 1; i <= maxSeats; i++) {
+                if (!occupiedSeats.contains(i)) {
+                    seatNumber = i;
+                    break;
+                }
+            }
+            
+            if (seatNumber == null) {
+                throw new BusinessException("没有可用座位");
+            }
+        }
+        
+        // 更新用户座位
+        roomPlayer.setSeatNumber(seatNumber);
+        this.updateById(roomPlayer);
+        
+        return roomPlayer;
+    }
+
+    @Override
+    public RoomPlayer getRoomPlayer(Long roomId, Long userId) {
+        return getOne(new LambdaQueryWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomId)
+                .eq(RoomPlayer::getUserId, userId));
     }
 } 

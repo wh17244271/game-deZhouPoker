@@ -1,6 +1,7 @@
 package com.dezhou.poker.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -96,5 +97,19 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
                 .eq("room_id", roomId)
                 .orderBy(true, true, "seat_number")
         );
+    }
+
+    @Override
+    public RoomPlayer getRoomPlayer(Long roomId, Long userId) {
+        return roomPlayerMapper.selectOne(
+            new LambdaQueryWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomId)
+                .eq(RoomPlayer::getUserId, userId)
+        );
+    }
+
+    @Override
+    public boolean updateRoomPlayer(RoomPlayer roomPlayer) {
+        return roomPlayerMapper.updateById(roomPlayer) > 0;
     }
 } 
