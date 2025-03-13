@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authHeader from './auth-header';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 
 class GameService {
   /**
@@ -10,7 +10,16 @@ class GameService {
    * @returns {Promise} - 返回游戏信息的Promise
    */
   getCurrentGame(roomId) {
-    return axios.get(`${API_URL}/games/room/${roomId}/current`, { headers: authHeader() });
+    console.log('GameService: 获取当前游戏', roomId);
+    return axios.get(`${API_URL}/games/room/${roomId}/current`, { headers: authHeader() })
+      .then(response => {
+        console.log('GameService: 获取当前游戏响应', response);
+        return response;
+      })
+      .catch(error => {
+        console.error('GameService: 获取当前游戏错误', error);
+        throw error;
+      });
   }
 
   /**
@@ -188,6 +197,7 @@ class GameService {
    * @returns {Promise} - 返回玩家手牌的Promise
    */
   getMyCards(gameId) {
+    console.log('GameService: 获取玩家手牌', gameId);
     return axios.get(`${API_URL}/games/${gameId}/my-cards`, { headers: authHeader() });
   }
 
@@ -206,6 +216,7 @@ class GameService {
    * @returns {Promise} - 返回游戏状态管理结果的Promise
    */
   manageRoomGameState(roomId) {
+    console.log('GameService: 管理房间游戏状态', roomId);
     return axios.post(`${API_URL}/games/room/${roomId}/manage`, {}, { headers: authHeader() });
   }
 
@@ -215,7 +226,8 @@ class GameService {
    * @returns {Promise} - 返回处理结果的Promise
    */
   handlePlayerLeave(roomId) {
-    return axios.post(`${API_URL}/games/room/${roomId}/leave`, {}, { headers: authHeader() });
+    console.log('GameService: 处理玩家离开', roomId);
+    return axios.post(`${API_URL}/games/room/${roomId}/player-leave`, {}, { headers: authHeader() });
   }
 
   /**
@@ -224,7 +236,8 @@ class GameService {
    * @returns {Promise} - 返回发牌结果的Promise
    */
   autoDealCards(roomId) {
-    return axios.post(`${API_URL}/games/room/${roomId}/auto-deal`, {}, { headers: authHeader() });
+    console.log('GameService: 自动发牌', roomId);
+    return axios.post(`${API_URL}/games/room/${roomId}/deal`, {}, { headers: authHeader() });
   }
 
   /**
@@ -233,7 +246,8 @@ class GameService {
    * @returns {Promise} - 返回检查结果的Promise
    */
   checkGameEndCondition(gameId) {
-    return axios.post(`${API_URL}/games/${gameId}/check-end`, {}, { headers: authHeader() });
+    console.log('GameService: 检查游戏结束条件', gameId);
+    return axios.get(`${API_URL}/games/${gameId}/check-end`, { headers: authHeader() });
   }
 
   /**
@@ -242,11 +256,8 @@ class GameService {
    * @returns {Promise} - 返回设置结果的Promise
    */
   setDealerPosition(gameId) {
-    return axios.post(
-      `${API_URL}/games/${gameId}/set-dealer`,
-      {},
-      { headers: authHeader() }
-    );
+    console.log('GameService: 设置庄家位置', gameId);
+    return axios.post(`${API_URL}/games/${gameId}/dealer`, {}, { headers: authHeader() });
   }
 
   /**
@@ -255,10 +266,11 @@ class GameService {
    * @param {number} timePerRound - 每轮时间（秒）
    * @returns {Promise} - 返回设置结果的Promise
    */
-  setGameTimer(gameId, timePerRound = 30) {
+  setGameTimer(gameId, timePerRound) {
+    console.log('GameService: 设置游戏计时器', gameId, timePerRound);
     return axios.post(
-      `${API_URL}/games/${gameId}/set-timer?timePerRound=${timePerRound}`,
-      {},
+      `${API_URL}/games/${gameId}/timer`, 
+      { timePerRound }, 
       { headers: authHeader() }
     );
   }
@@ -271,9 +283,10 @@ class GameService {
    * @returns {Promise} - 返回执行结果的Promise
    */
   performAction(gameId, actionType, amount = 0) {
+    console.log('GameService: 执行游戏动作', gameId, actionType, amount);
     return axios.post(
-      `${API_URL}/games/${gameId}/actions`,
-      { actionType, amount },
+      `${API_URL}/games/${gameId}/action`, 
+      { actionType, amount }, 
       { headers: authHeader() }
     );
   }
@@ -330,9 +343,10 @@ class GameService {
    * @returns {Promise} - 返回发牌结果的Promise
    */
   dealCommunityCards(gameId, count) {
+    console.log('GameService: 发公共牌', gameId, count);
     return axios.post(
-      `${API_URL}/games/${gameId}/community-cards?count=${count}`,
-      {},
+      `${API_URL}/games/${gameId}/community-cards`, 
+      { count }, 
       { headers: authHeader() }
     );
   }
@@ -343,11 +357,8 @@ class GameService {
    * @returns {Promise} - 返回游戏结算结果的Promise
    */
   showdown(gameId) {
-    return axios.post(
-      `${API_URL}/games/${gameId}/showdown`,
-      {},
-      { headers: authHeader() }
-    );
+    console.log('GameService: 游戏结算', gameId);
+    return axios.post(`${API_URL}/games/${gameId}/showdown`, {}, { headers: authHeader() });
   }
 }
 

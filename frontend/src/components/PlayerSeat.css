@@ -1,15 +1,15 @@
 .player-seat {
   position: absolute;
-  width: 100px;
-  height: 80px;
+  width: 80px;
+  height: 70px;
   background-color: rgba(0, 100, 0, 0.7);
-  border: 3px solid #444;
-  border-radius: 10px;
+  border: 2px solid #444;
+  border-radius: 8px;
   color: white;
-  padding: 6px;
+  padding: 5px;
   text-align: center;
   z-index: 1;
-  font-size: 12px;
+  font-size: 11px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -199,4 +199,14 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
-} 
+}
+
+.player-seat-position-1 { bottom: 5%; left: 45%; }
+.player-seat-position-2 { bottom: 10%; left: 25%; }
+.player-seat-position-3 { bottom: 25%; left: 10%; }
+.player-seat-position-4 { bottom: 45%; left: 5%; }
+.player-seat-position-5 { top: 45%; left: 5%; }
+.player-seat-position-6 { top: 25%; left: 10%; }
+.player-seat-position-7 { top: 10%; left: 25%; }
+.player-seat-position-8 { top: 5%; left: 45%; }
+.player-seat-position-9 { top: 5%; right: 45%; } 

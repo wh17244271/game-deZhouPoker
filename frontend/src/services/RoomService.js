@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authHeader from './auth-header';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 
 class RoomService {
   /**
@@ -17,7 +17,7 @@ class RoomService {
    * @param {string} roomId - 房间ID
    * @returns {Promise} - 返回房间详情的Promise
    */
-  getRoomById(roomId) {
+  getRoomDetails(roomId) {
     return axios.get(`${API_URL}/rooms/${roomId}`, { headers: authHeader() });
   }
 
@@ -52,20 +52,11 @@ class RoomService {
   /**
    * 加入房间
    * @param {string} roomId - 房间ID
-   * @param {number} seatNumber - 座位号
-   * @param {number} buyIn - 买入金额
    * @returns {Promise} - 返回加入房间结果的Promise
    */
-  joinRoom(roomId, seatNumber, buyIn) {
-    const params = new URLSearchParams();
-    params.append('seatNumber', seatNumber);
-    params.append('buyIn', buyIn);
-    
-    return axios.post(
-      `${API_URL}/rooms/${roomId}/join?${params.toString()}`,
-      {},
-      { headers: authHeader() }
-    );
+  joinRoom(roomId) {
+    console.log('RoomService: 加入房间', roomId);
+    return axios.post(`${API_URL}/rooms/${roomId}/join`, {}, { headers: authHeader() });
   }
 
   /**
@@ -74,11 +65,8 @@ class RoomService {
    * @returns {Promise} - 返回离开房间结果的Promise
    */
   leaveRoom(roomId) {
-    return axios.post(
-      `${API_URL}/rooms/${roomId}/leave`,
-      {},
-      { headers: authHeader() }
-    );
+    console.log('RoomService: 离开房间', roomId);
+    return axios.post(`${API_URL}/rooms/${roomId}/leave`, {}, { headers: authHeader() });
   }
 
   /**
@@ -87,12 +75,21 @@ class RoomService {
    * @param {number} seatNumber - 座位号，如果为null则自动分配座位
    * @returns {Promise} - 返回入座结果的Promise
    */
-  seatPlayer(roomId, seatNumber = null) {
+  seatPlayer(roomId, seatNumber) {
+    console.log('RoomService: 入座请求', roomId, seatNumber);
+    const requestData = seatNumber !== null ? { seatNumber } : {};
+    
     return axios.post(
-      `${API_URL}/rooms/${roomId}/seat`,
-      { seatNumber },
+      `${API_URL}/rooms/${roomId}/seat`, 
+      requestData, 
       { headers: authHeader() }
-    );
+    ).then(response => {
+      console.log('RoomService: 入座响应', response);
+      return response;
+    }).catch(error => {
+      console.error('RoomService: 入座错误', error);
+      throw error;
+    });
   }
 
   /**
@@ -101,11 +98,8 @@ class RoomService {
    * @returns {Promise} - 返回操作结果的Promise
    */
   leaveTable(roomId) {
-    return axios.post(
-      `${API_URL}/rooms/${roomId}/leave-table`,
-      {},
-      { headers: authHeader() }
-    );
+    console.log('RoomService: 离开牌桌', roomId);
+    return axios.post(`${API_URL}/rooms/${roomId}/unseat`, {}, { headers: authHeader() });
   }
 
   /**
@@ -123,6 +117,7 @@ class RoomService {
    * @returns {Promise} - 返回用户在房间的状态
    */
   getUserRoomStatus(roomId) {
+    console.log('RoomService: 获取用户房间状态', roomId);
     return axios.get(`${API_URL}/rooms/${roomId}/my-status`, { headers: authHeader() });
   }
 
@@ -133,11 +128,7 @@ class RoomService {
    * @returns {Promise} - 返回更新房间设置结果的Promise
    */
   updateRoomSettings(roomId, settings) {
-    return axios.put(
-      `${API_URL}/rooms/${roomId}`,
-      settings,
-      { headers: authHeader() }
-    );
+    return axios.put(`${API_URL}/rooms/${roomId}/settings`, settings, { headers: authHeader() });
   }
 
   /**

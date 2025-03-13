@@ -42,7 +42,7 @@ const RoomDetail = ({ currentUser }) => {
     setLoading(true);
     setError('');
     
-    RoomService.getRoomById(roomId)
+    RoomService.getRoomDetails(roomId)
       .then(response => {
         if (response.data && response.data.success) {
           const roomData = response.data.data[0];

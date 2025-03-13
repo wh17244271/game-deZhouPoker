@@ -16,23 +16,6 @@ const PlayerSeat = ({
   isCurrentUserSeat,
   playerCards
 }) => {
-  // 确定座位的位置样式
-  const getSeatPositionStyle = (position) => {
-    const positions = {
-      1: { bottom: '8%', left: '43%' },
-      2: { bottom: '15%', left: '20%' },
-      3: { bottom: '40%', left: '8%' },
-      4: { top: '40%', left: '8%' },
-      5: { top: '15%', left: '20%' },
-      6: { top: '15%', right: '20%' },
-      7: { top: '40%', right: '8%' },
-      8: { bottom: '40%', right: '8%' },
-      9: { bottom: '15%', right: '20%' }
-    };
-    
-    return positions[position] || {};
-  };
-  
   // 确定玩家的动作标签样式
   const getActionBadgeVariant = (action) => {
     if (!action) return 'secondary';
@@ -78,7 +61,7 @@ const PlayerSeat = ({
   
   // 确定座位的状态样式
   const getSeatStatusClass = () => {
-    let className = 'player-seat';
+    let className = 'player-seat player-seat-position-' + position;
     
     if (player) {
       if (isActive) {
@@ -102,7 +85,6 @@ const PlayerSeat = ({
   return (
     <div 
       className={getSeatStatusClass()}
-      style={getSeatPositionStyle(position)}
     >
       {/* 座位位置标记 */}
       <div className="seat-position-label">{position}</div>
@@ -121,7 +103,7 @@ const PlayerSeat = ({
           {/* 玩家信息 */}
           <div className="player-info">
             <div className="player-name">
-              {player.user?.username || '玩家 ' + position}
+              {player.user?.username || player.username || '玩家 ' + position}
               {isCurrentUserSeat && <span className="text-warning ml-1">(我)</span>}
             </div>
             <div className="player-chips">{player.currentChips || 0}</div>

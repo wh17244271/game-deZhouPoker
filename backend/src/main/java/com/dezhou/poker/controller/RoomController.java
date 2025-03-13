@@ -538,7 +538,7 @@ public class RoomController {
      * @return 用户在房间的状态
      */
     @GetMapping("/{roomId}/my-status")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> getUserRoomStatus(@AuthenticationPrincipal UserPrincipal currentUser,
                                             @PathVariable Long roomId) {
         try {
@@ -588,5 +588,15 @@ public class RoomController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "获取用户房间状态失败: " + e.getMessage()));
         }
+    }
+
+    /**
+     * 获取当前用户在房间的状态信息（新接口，与my-status功能相同）
+     */
+    @GetMapping("/{roomId}/status")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> getUserRoomStatusNew(@AuthenticationPrincipal UserPrincipal currentUser,
+                                               @PathVariable Long roomId) {
+        return getUserRoomStatus(currentUser, roomId);
     }
 }

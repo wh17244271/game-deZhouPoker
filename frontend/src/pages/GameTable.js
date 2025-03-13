@@ -155,7 +155,34 @@ const GameTable = ({ currentUser }) => {
   
   // 自动分配座位
   const seatPlayerAutomatically = () => {
-    console.log('尝试自动入座...');
+    console.log('尝试自动入座');
+    
+    // 如果玩家已经入座，不允许再次入座
+    if (isSeated) {
+      addSystemMessage('您已经入座，不能再次入座');
+      return;
+    }
+    
+    // 添加加载状态
+    setLoading(true);
+    setError('');
+    
+    // 确保roomId有效
+    if (!roomId) {
+      setError('房间ID无效');
+      addSystemMessage('房间ID无效');
+      setLoading(false);
+      return;
+    }
+    
+    // 确保用户已登录
+    if (!currentUser || !currentUser.id) {
+      setError('请先登录');
+      addSystemMessage('请先登录');
+      setLoading(false);
+      return;
+    }
+    
     RoomService.seatPlayer(roomId, null)
       .then(response => {
         console.log('自动入座响应:', response);
@@ -163,52 +190,47 @@ const GameTable = ({ currentUser }) => {
           const seatNumber = response.data.data;
           setCurrentPlayerSeat(seatNumber);
           setIsSeated(true);
-          addSystemMessage(`您已自动入座在座位 ${seatNumber}`);
           
-          // 加载房间数据，检查是否满足开始游戏的条件
-          RoomService.getRoomById(roomId)
-            .then(roomResponse => {
-              if (roomResponse.data && roomResponse.data.success) {
-                const roomData = roomResponse.data.data[0];
-                const playersData = roomResponse.data.data[1];
-                
-                // 计算已入座玩家数
-                const seatedPlayersCount = playersData.filter(p => p.seatNumber !== null).length;
-                
-                console.log(`房间最小玩家数: ${roomData.minPlayers}, 当前入座玩家数: ${seatedPlayersCount}`);
-                
-                // 如果已入座玩家数满足最小人数要求，且没有正在进行的游戏，自动发牌开始
-                if (seatedPlayersCount >= roomData.minPlayers && !game) {
-                  console.log('满足最小玩家数要求，尝试自动开始游戏...');
-                  // 自动开始游戏
-                  GameService.autoDealCards(roomId)
-                    .then(dealResponse => {
-                      console.log('自动发牌响应:', dealResponse);
-                      if (dealResponse.data && dealResponse.data.success) {
-                        addSystemMessage('游戏自动开始，发牌成功！');
-                        loadGameData();
-                      }
-                    })
-                    .catch(error => {
-                      console.error('自动发牌错误:', error);
-                    });
-                }
-              }
-            })
-            .catch(error => {
-              console.error('获取房间数据错误:', error);
-            });
+          // 立即更新玩家列表，添加当前玩家
+          const newPlayer = {
+            userId: currentUser.id,
+            user: {
+              id: currentUser.id,
+              username: currentUser.username
+            },
+            username: currentUser.username,
+            seatNumber: seatNumber,
+            currentChips: currentUser.currentChips || 0,
+            status: 'SEATED'
+          };
+          
+          setPlayers(prevPlayers => {
+            // 过滤掉可能存在的当前玩家记录
+            const filteredPlayers = prevPlayers.filter(p => 
+              p.userId !== currentUser.id && 
+              (p.user ? p.user.id !== currentUser.id : true)
+            );
+            return [...filteredPlayers, newPlayer];
+          });
+          
+          addSystemMessage(`您已自动入座在座位 ${seatNumber}`);
+          loadGameData();
+        } else {
+          // 处理响应中的错误信息
+          const errorMessage = response.data?.message || '自动入座失败';
+          setError(errorMessage);
+          addSystemMessage(errorMessage);
         }
+        setLoading(false);
       })
       .catch(error => {
         console.error('自动入座错误:', error);
         const errorMessage = 
-          (error.response && 
-           error.response.data && 
-           error.response.data.message) || 
-          error.message || 
-          '无法自动入座，可能座位已满';
+          (error.response && error.response.data && error.response.data.message) || 
+          '自动入座失败，请稍后再试';
         setError(errorMessage);
+        addSystemMessage(errorMessage);
+        setLoading(false);
       });
   };
   
@@ -683,15 +705,20 @@ const GameTable = ({ currentUser }) => {
     const processedPlayers = validPlayersData.map(player => {
       // 确保user对象存在，如果不存在，创建一个包含必要信息的user对象
       const userObj = player.user || {
-        id: player.userId,
-        username: player.username || `玩家${player.seatNumber || ''}`
+        id: player.userId || currentUser.id,
+        username: player.username || currentUser.username
       };
+      
+      // 如果是当前用户，确保使用当前用户的用户名
+      const isCurrentUser = (player.userId === currentUser.id) || 
+                           (player.user && player.user.id === currentUser.id);
       
       return {
         ...player,
         user: userObj,
         userId: player.userId || userObj.id,
-        username: player.username || userObj.username,
+        username: isCurrentUser ? currentUser.username : 
+                 (player.username || userObj.username || `玩家${player.seatNumber || ''}`),
         status: player.status || 'WAITING',
         currentChips: player.currentChips || 0,
         // 确保seatNumber是数字类型
@@ -1162,29 +1189,72 @@ const GameTable = ({ currentUser }) => {
   
   // 处理玩家点击座位入座
   const handleClickSeat = (position) => {
-    if (!isSeated && !players.find(p => p.seatNumber === position)) {
-      console.log('尝试入座在位置:', position);
-      RoomService.seatPlayer(roomId, position)
-        .then(response => {
-          console.log('入座响应:', response);
-          if (response.data && response.data.success) {
-            setCurrentPlayerSeat(position);
-            setIsSeated(true);
-            addSystemMessage(`您已入座在座位 ${position}`);
-            loadGameData();
-          }
-        })
-        .catch(error => {
-          console.error('入座错误:', error);
-          const errorMessage = 
-            (error.response && 
-             error.response.data && 
-             error.response.data.message) || 
-            error.message || 
-            '无法入座，座位可能已被占用';
-          setError(errorMessage);
-        });
+    // 如果玩家已经入座，不允许更换座位
+    if (isSeated) {
+      addSystemMessage('您已经入座，不能更换座位');
+      return;
     }
+    
+    // 如果座位已被占用，不允许入座
+    if (players.find(p => p.seatNumber === position)) {
+      addSystemMessage('该座位已被占用');
+      return;
+    }
+    
+    console.log('尝试入座在位置:', position);
+    setLoading(true);
+    
+    RoomService.seatPlayer(roomId, position)
+      .then(response => {
+        console.log('入座响应:', response);
+        if (response.data && response.data.success) {
+          setCurrentPlayerSeat(position);
+          setIsSeated(true);
+          
+          // 立即更新玩家列表，添加当前玩家
+          const newPlayer = {
+            userId: currentUser.id,
+            user: {
+              id: currentUser.id,
+              username: currentUser.username
+            },
+            username: currentUser.username,
+            seatNumber: position,
+            currentChips: currentUser.currentChips || 0,
+            status: 'SEATED'
+          };
+          
+          setPlayers(prevPlayers => {
+            // 过滤掉可能存在的当前玩家记录
+            const filteredPlayers = prevPlayers.filter(p => 
+              p.userId !== currentUser.id && 
+              (p.user ? p.user.id !== currentUser.id : true)
+            );
+            return [...filteredPlayers, newPlayer];
+          });
+          
+          addSystemMessage(`您已入座在座位 ${position}`);
+          loadGameData();
+        } else {
+          // 处理响应中的错误信息
+          const errorMessage = response.data?.message || '入座失败';
+          setError(errorMessage);
+          addSystemMessage(errorMessage);
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('入座错误:', error);
+        const errorMessage = 
+          (error.response && 
+           error.response.data && 
+           error.response.data.message) || 
+          error.message || 
+          '无法入座，座位可能已被占用';
+        setError(errorMessage);
+        addSystemMessage(errorMessage);
+        setLoading(false);
+      });
   };
   
   if (loading) {
@@ -1382,6 +1452,35 @@ const GameTable = ({ currentUser }) => {
               <Button variant="outline-primary" onClick={handleReturnToRoom}>
                 返回房间
               </Button>
+            </div>
+            
+            {/* 玩家信息区域 - 红框区域 */}
+            <div className="player-info-area mt-3 p-3 border border-danger rounded">
+              <Row>
+                <Col md={4}>
+                  <h5>玩家信息</h5>
+                  <p><strong>用户名:</strong> {currentUser ? currentUser.username : '未登录'}</p>
+                  <p><strong>当前筹码:</strong> {currentPlayer ? currentPlayer.currentChips : 0}</p>
+                </Col>
+                <Col md={4}>
+                  <h5>游戏状态</h5>
+                  <p><strong>状态:</strong> {
+                    isSeated ? 
+                      (currentPlayer ? 
+                        (currentPlayer.status === 'ACTIVE' ? '游戏中' : 
+                         currentPlayer.status === 'FOLDED' ? '已弃牌' : 
+                         currentPlayer.status === 'SEATED' ? '已入座' : currentPlayer.status) 
+                        : '已入座') 
+                      : '未入座'
+                  }</p>
+                  <p><strong>座位号:</strong> {currentPlayerSeat || '无'}</p>
+                </Col>
+                <Col md={4}>
+                  <h5>资金信息</h5>
+                  <p><strong>贷入金额:</strong> {currentUser ? (currentUser.loanAmount || 0) : 0}</p>
+                  <p><strong>当前回合下注:</strong> {getPlayerLastBet(currentUser ? currentUser.id : null) || 0}</p>
+                </Col>
+              </Row>
             </div>
           </div>
         </Col>
