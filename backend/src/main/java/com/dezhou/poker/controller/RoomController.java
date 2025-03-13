@@ -463,4 +463,69 @@ public class RoomController {
                     .body(new ApiResponse(false, "入座失败: " + e.getMessage()));
         }
     }
+
+    /**
+     * 玩家离开牌桌但保留在房间中
+     *
+     * @param currentUser 当前用户
+     * @param roomId      房间ID
+     * @return 操作结果
+     */
+    @PostMapping("/{roomId}/leave-table")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> leaveTable(@AuthenticationPrincipal UserPrincipal currentUser,
+                                     @PathVariable Long roomId) {
+        try {
+            logger.info("玩家离开牌桌请求, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+
+            // 获取房间
+            Room room = roomService.getById(roomId);
+            if (room == null) {
+                logger.error("房间不存在, 房间ID: {}", roomId);
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "房间不存在"));
+            }
+
+            // 检查用户是否已在该房间
+            RoomPlayer existingPlayer = roomService.getRoomPlayer(roomId, currentUser.getId());
+            if (existingPlayer == null) {
+                logger.error("用户不在房间中, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "您不在该房间中"));
+            }
+
+            // 如果用户没有座位，直接返回成功
+            if (existingPlayer.getSeatNumber() == null) {
+                logger.info("用户已经没有座位, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+                return ResponseEntity.ok(new ApiResponse(true, "您已经离开牌桌"));
+            }
+
+            // 检查是否有进行中的游戏
+            GameHistory currentGame = gameService.getCurrentGame(roomId);
+            if (currentGame != null) {
+                // 处理玩家在游戏中离开的情况
+                Map<String, Object> result = gameService.handlePlayerLeave(roomId, currentUser.getId());
+                logger.info("处理游戏中玩家离开结果: {}", result);
+            }
+
+            // 更新用户状态为等待，并清除座位号
+            existingPlayer.setSeatNumber(null);
+            existingPlayer.setStatusEnum(RoomPlayer.PlayerStatus.WAITING);
+            boolean updated = roomService.updateRoomPlayer(existingPlayer);
+            
+            if (!updated) {
+                logger.error("更新用户状态失败, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ApiResponse(false, "离开牌桌失败: 更新用户状态失败"));
+            }
+            
+            // 推送房间更新消息
+            messagingTemplate.convertAndSend("/topic/room/" + roomId, Collections.singletonMap("type", "ROOM_UPDATE"));
+
+            logger.info("用户成功离开牌桌, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+            return ResponseEntity.ok(new ApiResponse(true, "离开牌桌成功"));
+        } catch (Exception e) {
+            logger.error("玩家离开牌桌失败, 房间ID: {}, 用户ID: {}, 错误: {}", roomId, currentUser.getId(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "离开牌桌失败: " + e.getMessage()));
+        }
+    }
 }

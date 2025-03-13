@@ -246,7 +246,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
     @Transactional
     public PlayerGameHistory updateWinner(Long gameId, Long userId, BigDecimal finalChips, String finalHandType) {
         PlayerGameHistoryId id = new PlayerGameHistoryId(gameId, userId);
-        PlayerGameHistory playerGameHistory = playerGameHistoryMapper.selectById(id);
+        PlayerGameHistory playerGameHistory = playerGameHistoryMapper.selectByGameIdAndUserId(gameId, userId);
         if (playerGameHistory == null) {
             throw new IllegalStateException("玩家游戏历史记录不存在");
         }
@@ -400,7 +400,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
      * @return 玩家手牌
      */
     public String getPlayerCards(Long gameId, Long userId) {
-        PlayerGameHistory player = playerGameHistoryMapper.selectById(new PlayerGameHistoryId(gameId, userId));
+        PlayerGameHistory player = playerGameHistoryMapper.selectByGameIdAndUserId(gameId, userId);
         return player != null ? player.getHoleCards() : null;
     }
 
@@ -575,7 +575,7 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         }
         
         // 检查玩家是否在当前游戏中
-        PlayerGameHistory playerGame = playerGameHistoryMapper.selectById(new PlayerGameHistoryId(currentGame.getId(), userId));
+        PlayerGameHistory playerGame = playerGameHistoryMapper.selectByGameIdAndUserId(currentGame.getId(), userId);
         if (playerGame == null) {
             // 玩家不在当前游戏中，无需处理
             result.put("action", "PLAYER_NOT_IN_GAME");
