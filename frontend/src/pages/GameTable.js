@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card as BootstrapCard, Button, Alert, Modal } from 'react-bootstrap';
 import PlayerSeat from '../components/PlayerSeat';
@@ -29,7 +29,7 @@ const GameTable = ({ currentUser }) => {
   const [isSeated, setIsSeated] = useState(false);
   const [dealerPosition, setDealerPosition] = useState(null);
   const [smallBlindPosition, setSmallBlindPosition] = useState(null);
-  const [bigBlindPosition, setbigBlindPosition] = useState(null);
+  const [bigBlindPosition, setBigBlindPosition] = useState(null);
   const [currentTurn, setCurrentTurn] = useState(null);
   
   // 游戏信息
@@ -49,118 +49,166 @@ const GameTable = ({ currentUser }) => {
   const [mostVotedOption, setMostVotedOption] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   
+  // WebSocket状态
+  const [webSocketConnected, setWebSocketConnected] = useState(false);
+  
+  // 计时器引用
+  const timerRef = useRef(null);
+  
   // 游戏结果
   const [showResults, setShowResults] = useState(false);
   const [winners, setWinners] = useState([]);
   
   // 初始化WebSocket连接
   useEffect(() => {
-    // 设置WebSocket回调
-    const callbacks = {
-      onConnect: () => {
-        console.log('WebSocket连接成功');
-        addSystemMessage('连接到游戏服务器成功');
-      },
-      onDisconnect: () => {
-        console.log('WebSocket连接断开');
-        addSystemMessage('与游戏服务器的连接已断开');
-      },
-      onMessage: handleWebSocketMessage,
-      onError: (error) => {
-        console.error('WebSocket错误:', error);
-        setError('WebSocket连接错误: ' + error);
-      }
-    };
-    
-    // 连接WebSocket
-    WebSocketService.connect(roomId, callbacks);
-    
-    // 检查用户是否已入座，如果未入座则自动申请座位
-    checkAndSeatPlayer();
-    
-    // 加载游戏数据 - 使用自动游戏管理
-    manageGameState();
-    
-    // 设置定时器，定期检查游戏状态
-    const gameStateTimer = setInterval(() => {
-      if (game && game.id) {
-        checkGameEndCondition(game.id);
-      }
-    }, 5000);
-    
-    // 组件卸载时断开WebSocket连接
-    return () => {
-      WebSocketService.disconnect();
-      clearInterval(gameStateTimer);
+    if (currentUser && roomId) {
+      console.log('GameTable组件初始化，用户ID:', currentUser.id, '房间ID:', roomId);
       
-      // 处理玩家离开
-      handleLeaveGame();
-    };
-  }, [roomId]);
+      // 连接WebSocket
+      WebSocketService.connect(roomId, {
+        onConnect: () => {
+          console.log('WebSocket连接成功');
+          setWebSocketConnected(true);
+          addSystemMessage('已连接到游戏服务器');
+        },
+        onMessage: handleWebSocketMessage,
+        onError: (error) => {
+          console.error('WebSocket错误:', error);
+          addSystemMessage('连接错误: ' + error);
+        },
+        onDisconnect: () => {
+          console.log('WebSocket连接已断开');
+          setWebSocketConnected(false);
+          addSystemMessage('已断开与游戏服务器的连接');
+        }
+      });
+      
+      // 检查用户状态并自动入座
+      checkAndSeatPlayer();
+      
+      // 加载游戏数据
+      loadGameData();
+      
+      // 启动游戏数据更新定时器
+      startGameUpdater();
+      
+      // 组件卸载时清理
+      return () => {
+        console.log('GameTable组件卸载，断开WebSocket连接');
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+        WebSocketService.disconnect();
+      };
+    }
+  }, [currentUser, roomId]);
   
-  // 检查用户是否已入座，如果未入座则自动申请座位
+  // 启动游戏数据更新定时器
+  const startGameUpdater = () => {
+    // 清除现有定时器（如果有）
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    // 创建新的定时器，每10秒更新一次游戏数据
+    timerRef.current = setInterval(() => {
+      if (game && game.id) {
+        // 只有在游戏进行中时才自动更新
+        if (game.status === 'IN_PROGRESS') {
+          loadGameData();
+        }
+      }
+    }, 10000);
+  };
+  
+  // 检查用户状态并处理自动入座
   const checkAndSeatPlayer = () => {
-    // 先检查用户是否已在房间中有座位
+    console.log('检查用户状态，准备自动入座...');
+    
+    // 先获取用户在房间的状态
     RoomService.getUserRoomStatus(roomId)
       .then(response => {
-        if (response.data && response.data.success) {
-          const userData = response.data.data;
-          if (userData.isSeated) {
-            // 用户已入座
-            setIsSeated(true);
-            setCurrentPlayerSeat(userData.seatNumber);
-            addSystemMessage(`您已入座于座位 ${userData.seatNumber}`);
-          } else {
-            // 用户未入座，自动分配座位
-            seatPlayerAutomatically();
-          }
-        } else {
-          // 请求失败，尝试自动入座
+        console.log('获取用户房间状态:', response.data);
+        
+        // 如果用户未入座，自动分配座位
+        if (response.data && !response.data.isSeated) {
+          console.log('用户未入座，尝试自动入座');
           seatPlayerAutomatically();
+        } else if (response.data && response.data.isSeated) {
+          console.log('用户已入座，座位号:', response.data.seatNumber);
+          setCurrentPlayerSeat(response.data.seatNumber);
+          setIsSeated(true);
+          
+          // 如果有游戏正在进行，加载玩家手牌
+          if (response.data.gameId) {
+            loadPlayerCards(response.data.gameId);
+          }
         }
       })
       .catch(error => {
-        console.error('检查用户状态错误:', error);
-        // 发生错误，尝试自动入座
+        console.error('获取用户房间状态错误:', error);
+        // 发生错误时，仍然尝试自动入座
         seatPlayerAutomatically();
       });
   };
   
   // 自动分配座位
   const seatPlayerAutomatically = () => {
+    console.log('尝试自动入座...');
     RoomService.seatPlayer(roomId, null)
       .then(response => {
+        console.log('自动入座响应:', response);
         if (response.data && response.data.success) {
-          const seatData = response.data.data;
+          const seatNumber = response.data.data;
+          setCurrentPlayerSeat(seatNumber);
           setIsSeated(true);
-          setCurrentPlayerSeat(seatData.seatNumber);
-          addSystemMessage(`您已自动入座于座位 ${seatData.seatNumber}`);
+          addSystemMessage(`您已自动入座在座位 ${seatNumber}`);
           
-          // 入座成功后，重新加载游戏状态
-          manageGameState();
-          
-          // 获取玩家手牌（如果游戏已开始）
-          if (game && game.id) {
-            loadPlayerCards(game.id);
-          }
-        } else {
-          const errorMessage = response.data?.message || '自动入座失败';
-          console.error('自动入座失败:', errorMessage);
-          setError(errorMessage);
-          addSystemMessage('自动入座失败: ' + errorMessage);
+          // 加载房间数据，检查是否满足开始游戏的条件
+          RoomService.getRoomById(roomId)
+            .then(roomResponse => {
+              if (roomResponse.data && roomResponse.data.success) {
+                const roomData = roomResponse.data.data[0];
+                const playersData = roomResponse.data.data[1];
+                
+                // 计算已入座玩家数
+                const seatedPlayersCount = playersData.filter(p => p.seatNumber !== null).length;
+                
+                console.log(`房间最小玩家数: ${roomData.minPlayers}, 当前入座玩家数: ${seatedPlayersCount}`);
+                
+                // 如果已入座玩家数满足最小人数要求，且没有正在进行的游戏，自动发牌开始
+                if (seatedPlayersCount >= roomData.minPlayers && !game) {
+                  console.log('满足最小玩家数要求，尝试自动开始游戏...');
+                  // 自动开始游戏
+                  GameService.autoDealCards(roomId)
+                    .then(dealResponse => {
+                      console.log('自动发牌响应:', dealResponse);
+                      if (dealResponse.data && dealResponse.data.success) {
+                        addSystemMessage('游戏自动开始，发牌成功！');
+                        loadGameData();
+                      }
+                    })
+                    .catch(error => {
+                      console.error('自动发牌错误:', error);
+                    });
+                }
+              }
+            })
+            .catch(error => {
+              console.error('获取房间数据错误:', error);
+            });
         }
       })
       .catch(error => {
         console.error('自动入座错误:', error);
-        const resMessage =
-          (error.response &&
-            error.response.data &&
-            error.response.data.message) ||
-          error.message ||
-          error.toString();
-        
-        setError(resMessage);
-        addSystemMessage('自动入座错误: ' + resMessage);
+        const errorMessage = 
+          (error.response && 
+           error.response.data && 
+           error.response.data.message) || 
+          error.message || 
+          '无法自动入座，可能座位已满';
+        setError(errorMessage);
       });
   };
   
@@ -284,7 +332,7 @@ const GameTable = ({ currentUser }) => {
           // 更新UI中的庄家、小盲注和大盲注位置
           setDealerPosition(result.dealerSeat);
           setSmallBlindPosition(result.smallBlindSeat);
-          setbigBlindPosition(result.bigBlindSeat);
+          setBigBlindPosition(result.bigBlindSeat);
           setCurrentTurn(result.currentTurn);
           
           addSystemMessage(`庄家位置已设置为座位 ${result.dealerSeat}`);
@@ -598,155 +646,69 @@ const GameTable = ({ currentUser }) => {
       }
     }
     
-    // 查找当前玩家
-    if (currentUser) {
-      try {
-        const currentPlayerData = validPlayersData.find(p => {
-          // 增强玩家匹配逻辑，处理不同的ID格式
-          const playerId = p.user?.id || p.user?.userId || p.userId || p.id;
-          const userId = currentUser.userId || currentUser.id;
-          return playerId === userId;
-        });
-        
-        setCurrentPlayer(currentPlayerData || null);
-        
-        if (currentPlayerData) {
-          setCurrentPlayerSeat(currentPlayerData.seatNumber);
-        }
-      } catch (e) {
-        console.error('设置当前玩家错误:', e);
-      }
-    }
-    
-    // 确定当前轮次
-    const rounds = ['PRE_FLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'];
-    let currentRound = 'PRE_FLOP';
-    
-    try {
-      if (gameData.currentRound) {
-        currentRound = gameData.currentRound;
+    // 设置当前游戏轮次
+    if (gameData.currentRound !== undefined) {
+      // 根据轮次的数值设置对应的轮次名称
+      const rounds = ['PRE_FLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'];
+      const roundIndex = parseInt(gameData.currentRound);
+      if (!isNaN(roundIndex) && roundIndex >= 0 && roundIndex < rounds.length) {
+        setCurrentRound(rounds[roundIndex]);
       } else {
-        for (let i = rounds.length - 1; i >= 0; i--) {
-          const roundActions = validActionsData.filter(a => a.round === rounds[i]);
-          if (roundActions.length > 0) {
-            currentRound = rounds[i];
-            break;
-          }
-        }
+        setCurrentRound('PRE_FLOP');
       }
-      
-      setCurrentRound(currentRound);
-    } catch (e) {
-      console.error('设置当前轮次错误:', e);
+    } else {
       setCurrentRound('PRE_FLOP');
     }
     
-    // 确定当前下注金额
-    try {
-      if (gameData.currentBet) {
-        setCurrentBet(gameData.currentBet);
-      } else {
-        const roundActions = validActionsData.filter(a => a.round === currentRound);
-        if (roundActions.length > 0) {
-          const bets = roundActions
-            .filter(a => ['BET', 'RAISE'].includes(a.actionType))
-            .map(a => parseFloat(a.amount) || 0);
-          
-          if (bets.length > 0) {
-            setCurrentBet(Math.max(...bets));
-          } else {
-            setCurrentBet(0);
-          }
-        } else {
-          setCurrentBet(0);
-        }
-      }
-    } catch (e) {
-      console.error('设置当前下注错误:', e);
-      setCurrentBet(0);
+    // 设置庄家位置、小盲注位置和大盲注位置
+    if (gameData.dealerPosition) {
+      setDealerPosition(parseInt(gameData.dealerPosition));
     }
     
-    // 确定庄家位置和盲注位置
-    try {
-      // 使用后端提供的位置信息，如果有的话
-      if (gameData.dealerPosition !== undefined) {
-        setDealerPosition(gameData.dealerPosition);
-      }
-      
-      if (gameData.smallBlindPosition !== undefined) {
-        setSmallBlindPosition(gameData.smallBlindPosition);
-      }
-      
-      if (gameData.bigBlindPosition !== undefined) {
-        setbigBlindPosition(gameData.bigBlindPosition);
-      }
-      
-      // 如果后端没有提供位置信息，使用简化处理
-      if (gameData.dealerPosition === undefined && validPlayersData.length > 0) {
-        const sortedPlayers = [...validPlayersData].sort((a, b) => 
-          (a.seatNumber || 0) - (b.seatNumber || 0));
-        
-        if (sortedPlayers.length > 0) {
-          setDealerPosition(sortedPlayers[0].seatNumber || 1);
-        }
-        
-        if (sortedPlayers.length > 1) {
-          setSmallBlindPosition(sortedPlayers[1].seatNumber || 2);
-        }
-        
-        if (sortedPlayers.length > 2) {
-          setbigBlindPosition(sortedPlayers[2].seatNumber || 3);
-        }
-      }
-    } catch (e) {
-      console.error('设置位置错误:', e);
+    if (gameData.smallBlindPosition) {
+      setSmallBlindPosition(parseInt(gameData.smallBlindPosition));
     }
     
-    // 确定当前回合玩家
-    try {
-      if (gameData.currentTurn !== undefined) {
-        setCurrentTurn(gameData.currentTurn);
-      } else {
-        // 简化处理：按座位号顺序轮流
-        const activePlayers = validPlayersData.filter(p => p.status === 'ACTIVE');
-        
-        if (activePlayers.length > 0) {
-          // 找出最后一个行动的玩家
-          const roundActions = validActionsData.filter(a => a.round === currentRound);
-          const lastActionPlayer = roundActions.length > 0 
-            ? roundActions[roundActions.length - 1].user?.id 
-            : null;
-          
-          if (lastActionPlayer) {
-            const lastActionPlayerIndex = activePlayers.findIndex(p => 
-              (p.user?.id || p.userId) === lastActionPlayer);
-            const nextPlayerIndex = (lastActionPlayerIndex + 1) % activePlayers.length;
-            setCurrentTurn(activePlayers[nextPlayerIndex].seatNumber || 1);
-          } else {
-            // 如果没有行动记录，从大盲注后开始
-            const sortedPlayers = [...validPlayersData].sort((a, b) => 
-              (a.seatNumber || 0) - (b.seatNumber || 0));
-            
-            if (sortedPlayers.length > 2) {
-              const bigBlindIndex = activePlayers.findIndex(p => 
-                p.seatNumber === sortedPlayers[2].seatNumber);
-              const nextPlayerIndex = (bigBlindIndex + 1) % activePlayers.length;
-              setCurrentTurn(activePlayers[nextPlayerIndex].seatNumber || 1);
-            } else {
-              setCurrentTurn(activePlayers[0].seatNumber || 1);
-            }
-          }
-        } else if (validPlayersData.length > 0) {
-          // 如果没有活跃玩家，使用第一个玩家的座位
-          setCurrentTurn(validPlayersData[0].seatNumber || 1);
-        } else {
-          // 如果没有玩家数据，设置默认值
-          setCurrentTurn(1);
-        }
-      }
-    } catch (e) {
-      console.error('设置当前回合玩家错误:', e);
-      setCurrentTurn(1);
+    if (gameData.bigBlindPosition) {
+      setBigBlindPosition(parseInt(gameData.bigBlindPosition));
+    }
+    
+    // 处理玩家信息
+    const processedPlayers = validPlayersData.map(player => {
+      // 构造完整的玩家对象
+      const userObj = player.user || { id: player.userId, username: `玩家${player.seatNumber || ''}` };
+      
+      return {
+        ...player,
+        user: userObj,
+        status: player.status || 'WAITING'
+      };
+    });
+    
+    setPlayers(processedPlayers);
+    
+    // 确定当前玩家的座位号
+    const currentPlayerInfo = processedPlayers.find(
+      p => p.userId === currentUser.id || (p.user && p.user.id === currentUser.id)
+    );
+    
+    if (currentPlayerInfo) {
+      setCurrentPlayerSeat(currentPlayerInfo.seatNumber);
+      setIsSeated(currentPlayerInfo.seatNumber !== null);
+    } else {
+      setCurrentPlayerSeat(null);
+      setIsSeated(false);
+    }
+    
+    // 确定当前轮到哪个玩家
+    if (gameData.currentPlayerId) {
+      const currentPlayerSeat = processedPlayers.find(
+        p => p.userId === gameData.currentPlayerId || (p.user && p.user.id === gameData.currentPlayerId)
+      )?.seatNumber;
+      
+      setCurrentTurn(currentPlayerSeat);
+    } else {
+      setCurrentTurn(null);
     }
   };
   
@@ -826,7 +788,7 @@ const GameTable = ({ currentUser }) => {
       if (message.data) {
         setDealerPosition(message.data.dealerSeat);
         setSmallBlindPosition(message.data.smallBlindSeat);
-        setbigBlindPosition(message.data.bigBlindSeat);
+        setBigBlindPosition(message.data.bigBlindSeat);
         
         addMessage({
           type: 'SYSTEM',

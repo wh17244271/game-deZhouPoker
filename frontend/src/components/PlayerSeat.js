@@ -107,6 +107,15 @@ const PlayerSeat = ({
       {/* 座位位置标记 */}
       <div className="seat-position-label">{position}</div>
       
+      {/* 庄家按钮 */}
+      {isDealer && <div className="dealer-button">D</div>}
+      
+      {/* 小盲注按钮 */}
+      {isSmallBlind && <div className="small-blind-button">SB</div>}
+      
+      {/* 大盲注按钮 */}
+      {isBigBlind && <div className="big-blind-button">BB</div>}
+      
       {player ? (
         <>
           {/* 玩家信息 */}
@@ -116,13 +125,6 @@ const PlayerSeat = ({
               {isCurrentUserSeat && <span className="text-warning ml-1">(我)</span>}
             </div>
             <div className="player-chips">{player.currentChips || 0}</div>
-          </div>
-          
-          {/* 玩家角色标记 */}
-          <div className="player-roles">
-            {isDealer && <span className="badge bg-info role-badge">D</span>}
-            {isSmallBlind && <span className="badge bg-warning role-badge">SB</span>}
-            {isBigBlind && <span className="badge bg-danger role-badge">BB</span>}
           </div>
           
           {/* 玩家动作 */}

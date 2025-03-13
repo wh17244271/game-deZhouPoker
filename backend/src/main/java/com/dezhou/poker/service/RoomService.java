@@ -100,4 +100,20 @@ public interface RoomService extends IService<Room> {
      * @return 是否更新成功
      */
     boolean updateRoomPlayer(RoomPlayer roomPlayer);
+
+    /**
+     * 获取房间中已入座的玩家
+     *
+     * @param roomId 房间ID
+     * @return 已入座的玩家列表
+     */
+    List<RoomPlayer> getSeatedPlayers(Long roomId);
+    
+    /**
+     * 获取房间中已入座玩家的数量
+     *
+     * @param roomId 房间ID
+     * @return 已入座玩家数量
+     */
+    int getSeatedPlayerCount(Long roomId);
 }

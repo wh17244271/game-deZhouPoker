@@ -55,52 +55,78 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
      */
     @Transactional
     public GameHistory startNewGame(Long roomId) {
+        // 检查房间是否存在
         Room room = roomService.getById(roomId);
-        
-        // 检查房间状态
-        if (room.getStatusEnum() == Room.RoomStatus.PLAYING) {
-            throw new IllegalStateException("房间已经在游戏中");
+        if (room == null) {
+            throw new IllegalArgumentException("房间不存在");
         }
         
-        // 检查房间玩家数量
-        if (room.getCurrentPlayers() < room.getMinPlayers()) {
-            throw new IllegalStateException("房间玩家数量不足");
+        // 检查房间中的玩家数量是否达到最小要求
+        int seatedPlayerCount = roomService.getSeatedPlayerCount(roomId);
+        if (seatedPlayerCount < room.getMinPlayers()) {
+            throw new IllegalArgumentException("玩家数量不足，无法开始游戏");
         }
         
-        // 创建游戏历史记录
-        GameHistory gameHistory = new GameHistory();
-        gameHistory.setRoomId(room.getId());
-        gameHistory.setStartTime(LocalDateTime.now());
-        gameHistory.setStatusEnum(GameHistory.GameStatus.IN_PROGRESS);
-        save(gameHistory);
+        // 获取或设置庄家位置
+        Integer dealerPosition;
         
-        // 获取房间玩家
-        List<RoomPlayer> roomPlayers = roomService.getRoomPlayers(roomId);
-        
-        // 为每个玩家创建游戏历史记录
-        for (RoomPlayer roomPlayer : roomPlayers) {
-            if (roomPlayer.getStatusEnum() == RoomPlayer.PlayerStatus.WAITING) {
-                // 更新玩家状态为活跃
-                roomPlayer.setStatusEnum(RoomPlayer.PlayerStatus.PLAYING);
-                
-                // 创建玩家游戏历史记录
-                PlayerGameHistory playerGameHistory = new PlayerGameHistory();
-                playerGameHistory.setId(new PlayerGameHistoryId(gameHistory.getId(), roomPlayer.getUserId()));
-                playerGameHistory.setGameId(gameHistory.getId());
-                playerGameHistory.setUserId(roomPlayer.getUserId());
-                playerGameHistory.setInitialChips(roomPlayer.getCurrentChips());
-                playerGameHistoryMapper.insert(playerGameHistory);
-            }
+        // 检查是否有之前的游戏，如果有，轮换庄家位置
+        GameHistory previousGame = getCurrentGame(roomId);
+        if (previousGame != null && previousGame.getDealerPosition() != null) {
+            dealerPosition = rotateDealerPosition(roomId);
+        } else {
+            // 首次游戏，随机选择庄家位置
+            dealerPosition = selectRandomDealerPosition(roomId);
         }
         
-        // 更新房间状态
-        // room.setStatusEnum(Room.RoomStatus.PLAYING);
-    
-        roomService.updateStatus(roomId, "PLAYING");
-
-        // roomService.updateById(room);
+        if (dealerPosition == null) {
+            throw new IllegalArgumentException("无法确定庄家位置，请确保有玩家入座");
+        }
         
-        return gameHistory;
+        // 创建新游戏
+        GameHistory newGame = new GameHistory();
+        newGame.setRoomId(roomId);
+        newGame.setStatusEnum(GameHistory.GameStatus.IN_PROGRESS);
+        newGame.setSmallBlind(room.getSmallBlind());
+        newGame.setBigBlind(room.getBigBlind());
+        newGame.setPotSize(BigDecimal.ZERO);
+        newGame.setCurrentRound(0);  // PRE_FLOP
+        newGame.setStartTime(LocalDateTime.now());
+        newGame.setCreatedAt(LocalDateTime.now());
+        newGame.setUpdatedAt(LocalDateTime.now());
+        newGame.setDeleted(0);
+        
+        // 设置庄家位置
+        newGame.setDealerPosition(dealerPosition);
+        
+        // 保存游戏
+        save(newGame);
+        
+        // 设置小盲注和大盲注位置
+        setBlindsPositions(newGame.getId(), dealerPosition);
+        
+        // 重新获取游戏，确保包含小盲注和大盲注位置
+        newGame = getById(newGame.getId());
+        
+        // 创建玩家游戏历史记录
+        List<RoomPlayer> seatedPlayers = roomService.getSeatedPlayers(roomId);
+        for (RoomPlayer player : seatedPlayers) {
+            PlayerGameHistory playerGameHistory = new PlayerGameHistory();
+            playerGameHistory.setGameId(newGame.getId());
+            playerGameHistory.setUserId(player.getUserId());
+            playerGameHistory.setInitialChips(player.getCurrentChips());
+            playerGameHistory.setFinalChips(player.getCurrentChips());
+            playerGameHistory.setCreatedAt(LocalDateTime.now());
+            playerGameHistory.setUpdatedAt(LocalDateTime.now());
+            playerGameHistory.setDeleted(0);
+            playerGameHistoryMapper.insert(playerGameHistory);
+        }
+        
+        // 发牌
+        Map<String, Object> dealResult = dealCards(newGame.getId());
+        
+        // 返回创建的游戏
+        return newGame;
     }
 
     /**
@@ -784,5 +810,195 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
         }
         
         return false;
+    }
+
+    /**
+     * 获取当前轮次的公共牌
+     *
+     * @param gameId 游戏ID
+     * @return 当前轮次应显示的公共牌
+     */
+    public String getVisibleCommunityCards(Long gameId) {
+        GameHistory gameHistory = getById(gameId);
+        if (gameHistory == null) {
+            return null;
+        }
+        
+        // 获取所有公共牌
+        String allCommunityCards = gameHistory.getCommunityCards();
+        if (allCommunityCards == null || allCommunityCards.isEmpty()) {
+            return "";
+        }
+        
+        // 按照轮次显示不同数量的公共牌
+        String[] cards = allCommunityCards.split(",");
+        Integer currentRound = gameHistory.getCurrentRound();
+        
+        // 如果没有设置轮次，默认为前翻牌阶段（不显示公共牌）
+        if (currentRound == null) {
+            return "";
+        }
+        
+        StringBuilder visibleCards = new StringBuilder();
+        
+        // 根据当前轮次确定应显示的公共牌数量
+        int visibleCardCount = 0;
+        
+        // 0: PRE_FLOP - 不显示公共牌
+        // 1: FLOP - 显示前3张公共牌
+        // 2: TURN - 显示前4张公共牌
+        // 3: RIVER - 显示全部5张公共牌
+        // 4: SHOWDOWN - 显示全部5张公共牌
+        
+        if (currentRound >= 1) { // FLOP及以后
+            visibleCardCount = 3;
+        }
+        
+        if (currentRound >= 2) { // TURN及以后
+            visibleCardCount = 4;
+        }
+        
+        if (currentRound >= 3) { // RIVER及以后
+            visibleCardCount = 5;
+        }
+        
+        // 确保不会超出实际牌的数量
+        visibleCardCount = Math.min(visibleCardCount, cards.length);
+        
+        // 构建可见公共牌字符串
+        for (int i = 0; i < visibleCardCount; i++) {
+            if (i > 0) {
+                visibleCards.append(",");
+            }
+            visibleCards.append(cards[i]);
+        }
+        
+        return visibleCards.toString();
+    }
+
+    /**
+     * 随机选择庄家位置
+     *
+     * @param roomId 房间ID
+     * @return 选中的庄家座位号
+     */
+    public Integer selectRandomDealerPosition(Long roomId) {
+        // 获取房间中有座位的玩家
+        List<RoomPlayer> seatedPlayers = roomService.getSeatedPlayers(roomId);
+        if (seatedPlayers.isEmpty()) {
+            return null;
+        }
+        
+        // 随机选择一名玩家作为庄家
+        int randomIndex = (int) (Math.random() * seatedPlayers.size());
+        RoomPlayer dealer = seatedPlayers.get(randomIndex);
+        
+        return dealer.getSeatNumber();
+    }
+    
+    /**
+     * 获取下一个座位号
+     * 
+     * @param currentPosition 当前座位号
+     * @param roomId 房间ID
+     * @return 下一个有效的座位号（顺时针方向）
+     */
+    public Integer getNextSeatPosition(Integer currentPosition, Long roomId) {
+        // 获取有效座位号列表（已有玩家的座位）
+        List<RoomPlayer> seatedPlayers = roomService.getSeatedPlayers(roomId);
+        if (seatedPlayers.isEmpty()) {
+            return null;
+        }
+        
+        List<Integer> seats = seatedPlayers.stream()
+            .map(RoomPlayer::getSeatNumber)
+            .filter(seat -> seat != null)
+            .sorted()
+            .collect(Collectors.toList());
+        
+        if (seats.isEmpty()) {
+            return null;
+        }
+        
+        // 如果当前位置不在有效座位列表中，返回第一个座位
+        if (currentPosition == null || !seats.contains(currentPosition)) {
+            return seats.get(0);
+        }
+        
+        // 查找下一个座位（顺时针）
+        int currentIndex = seats.indexOf(currentPosition);
+        int nextIndex = (currentIndex + 1) % seats.size();
+        
+        return seats.get(nextIndex);
+    }
+    
+    /**
+     * 设置盲注位置
+     * 
+     * @param gameId 游戏ID
+     * @param dealerPosition 庄家位置
+     */
+    public void setBlindsPositions(Long gameId, Integer dealerPosition) {
+        GameHistory game = getById(gameId);
+        if (game == null || dealerPosition == null) {
+            return;
+        }
+        
+        // 获取房间中有座位的玩家
+        List<RoomPlayer> seatedPlayers = roomService.getSeatedPlayers(game.getRoomId());
+        if (seatedPlayers.size() < 2) {
+            return;
+        }
+        
+        // 获取座位号列表并排序
+        List<Integer> seats = seatedPlayers.stream()
+            .map(RoomPlayer::getSeatNumber)
+            .filter(seat -> seat != null)
+            .sorted()
+            .collect(Collectors.toList());
+        
+        // 找到庄家在排序后列表中的位置
+        int dealerIndex = seats.indexOf(dealerPosition);
+        if (dealerIndex == -1) {
+            return;
+        }
+        
+        // 计算小盲注和大盲注位置（顺时针方向）
+        int smallBlindIndex = (dealerIndex + 1) % seats.size();
+        int bigBlindIndex = (dealerIndex + 2) % seats.size();
+        
+        // 设置小盲注和大盲注位置
+        game.setSmallBlindPosition(seats.get(smallBlindIndex));
+        game.setBigBlindPosition(seats.get(bigBlindIndex));
+        
+        // 设置庄家位置
+        game.setDealerPosition(dealerPosition);
+        
+        // 保存游戏信息
+        updateById(game);
+    }
+    
+    /**
+     * 轮换庄家位置（在游戏结束后调用）
+     *
+     * @param roomId 房间ID
+     * @return 新的庄家位置
+     */
+    public Integer rotateDealerPosition(Long roomId) {
+        // 获取当前游戏
+        GameHistory currentGame = getCurrentGame(roomId);
+        if (currentGame == null) {
+            return selectRandomDealerPosition(roomId);
+        }
+        
+        // 获取当前庄家位置
+        Integer currentDealerPosition = currentGame.getDealerPosition();
+        if (currentDealerPosition == null) {
+            return selectRandomDealerPosition(roomId);
+        }
+        
+        // 获取下一个座位作为新庄家
+        Integer nextDealerPosition = getNextSeatPosition(currentDealerPosition, roomId);
+        return nextDealerPosition != null ? nextDealerPosition : selectRandomDealerPosition(roomId);
     }
 }

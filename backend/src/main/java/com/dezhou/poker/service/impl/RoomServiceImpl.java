@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 房间服务实现类
@@ -123,5 +124,31 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
         );
         
         return updated > 0;
+    }
+
+    /**
+     * 获取房间中已入座的玩家
+     *
+     * @param roomId 房间ID
+     * @return 已入座的玩家列表
+     */
+    @Override
+    public List<RoomPlayer> getSeatedPlayers(Long roomId) {
+        return getRoomPlayers(roomId).stream()
+                .filter(player -> player.getSeatNumber() != null)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取房间中已入座玩家的数量
+     *
+     * @param roomId 房间ID
+     * @return 已入座玩家数量
+     */
+    @Override
+    public int getSeatedPlayerCount(Long roomId) {
+        return (int) getRoomPlayers(roomId).stream()
+                .filter(player -> player.getSeatNumber() != null)
+                .count();
     }
 } 

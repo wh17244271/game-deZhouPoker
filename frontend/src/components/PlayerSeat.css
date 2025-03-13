@@ -1,95 +1,89 @@
 .player-seat {
   position: absolute;
   width: 120px;
-  height: 150px;
-  border-radius: 5px;
-  padding: 10px;
-  background-color: rgba(0, 100, 0, 0.8);
+  height: 100px;
+  background-color: rgba(0, 100, 0, 0.7);
+  border: 3px solid #444;
+  border-radius: 10px;
   color: white;
+  padding: 8px;
+  text-align: center;
+  z-index: 1;
+  font-size: 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  z-index: 100;
-  transition: all 0.3s ease;
-  border: 2px solid #184a18;
+  justify-content: space-between;
 }
 
-.player-seat.empty-seat {
+.empty-seat {
   background-color: rgba(0, 100, 0, 0.5);
-  border: 2px dashed #184a18;
+  border-style: dashed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.player-seat.active-seat {
-  background-color: rgba(0, 120, 0, 0.9);
-  border: 2px solid #1d621d;
+.current-user-seat {
+  border-color: gold;
+  border-width: 3px;
+  box-shadow: 0 0 10px gold;
 }
 
-.player-seat.current-turn {
-  box-shadow: 0 0 15px 5px rgba(255, 255, 0, 0.7);
-  border: 2px solid #ffff00;
-  z-index: 101;
-  transform: scale(1.05);
+.current-turn {
+  background-color: rgba(0, 150, 0, 0.7);
+  border-color: #00ff00;
+  box-shadow: 0 0 15px #00ff00;
 }
 
-.player-seat.current-user-seat {
-  background-color: rgba(0, 120, 0, 1);
-  border: 2px solid #ffff00;
+.active-seat {
+  background-color: rgba(0, 100, 0, 0.8);
 }
 
 .seat-position-label {
   position: absolute;
   top: -15px;
-  left: -15px;
-  width: 25px;
-  height: 25px;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: #333;
-  color: white;
+  padding: 2px 6px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8em;
-  border: 1px solid #555;
+  font-size: 12px;
+}
+
+.empty-seat-label {
+  opacity: 0.7;
 }
 
 .player-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 5px;
   width: 100%;
-}
-
-.player-name {
-  font-size: 0.9em;
-  font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
   text-align: center;
 }
 
+.player-name {
+  font-weight: bold;
+  font-size: 14px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .player-chips {
-  font-size: 0.8em;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 10px;
-  padding: 2px 6px;
-  margin-top: 2px;
-  border: 1px solid #444;
+  font-size: 12px;
+  color: #ffcc00;
 }
 
 .player-roles {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-bottom: 5px;
+  margin-top: 4px;
 }
 
 .role-badge {
-  font-size: 0.7em;
-  font-weight: bold;
-  border-radius: 50% !important;
+  margin: 0 2px;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 50%;
   width: 20px;
   height: 20px;
   display: flex;
@@ -97,44 +91,84 @@
   justify-content: center;
 }
 
-.player-action {
-  margin: 5px 0;
+.dealer-button {
+  background-color: #007bff;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  border: 2px solid white;
+  font-size: 12px;
 }
 
-.player-action .badge {
-  font-size: 0.8em;
-  padding: 4px 8px;
+.small-blind-button {
+  background-color: #ffc107;
+  color: black;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: -10px;
+  right: 15px;
+  border: 2px solid white;
+  font-size: 11px;
+}
+
+.big-blind-button {
+  background-color: #dc3545;
+  color: white;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: -10px;
+  right: 40px;
+  border: 2px solid white;
+  font-size: 11px;
+}
+
+.player-action {
+  margin-top: 4px;
 }
 
 .player-hand {
   display: flex;
   justify-content: center;
-  gap: 5px;
-  margin-top: 5px;
+  margin-top: 4px;
 }
 
 .player-card {
-  transition: transform 0.3s ease;
-}
-
-.player-card:hover {
-  transform: translateY(-5px);
+  width: 30px;
+  height: 40px;
+  background-color: white;
+  border-radius: 4px;
+  margin: 0 2px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .card-back {
-  width: 35px;
-  height: 50px;
-  border-radius: 3px;
-  background-color: #244899;
-  background-image: repeating-linear-gradient(45deg, #1e3a80 0px, #1e3a80 2px, transparent 2px, transparent 4px);
-  border: 1px solid #fff;
-}
-
-.empty-seat-label {
-  color: rgba(255, 255, 255, 0.7);
-  font-style: italic;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #b0c4de,
+    #b0c4de 5px,
+    #4682b4 5px,
+    #4682b4 10px
+  );
 } 

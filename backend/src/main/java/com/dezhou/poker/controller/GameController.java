@@ -199,13 +199,13 @@ public class GameController {
     @GetMapping("/{gameId}/community-cards")
     public ResponseEntity<?> getCommunityCards(@PathVariable Long gameId) {
         try {
-            // 获取公共牌
-            String communityCards = gameService.getCommunityCards(gameId);
-            if (communityCards == null) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "游戏不存在或尚未发公共牌"));
+            // 获取当前轮次可见的公共牌
+            String visibleCommunityCards = gameService.getVisibleCommunityCards(gameId);
+            if (visibleCommunityCards == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "游戏不存在"));
             }
 
-            return ResponseEntity.ok(new ApiResponse(true, "获取公共牌成功", communityCards));
+            return ResponseEntity.ok(new ApiResponse(true, "获取公共牌成功", visibleCommunityCards));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, e.getMessage()));
         }
