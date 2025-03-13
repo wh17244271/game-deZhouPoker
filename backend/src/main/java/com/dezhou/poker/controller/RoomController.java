@@ -528,4 +528,64 @@ public class RoomController {
                     .body(new ApiResponse(false, "离开牌桌失败: " + e.getMessage()));
         }
     }
+
+    /**
+     * 获取当前用户在房间的状态信息
+     *
+     * @param currentUser 当前用户
+     * @param roomId      房间ID
+     * @return 用户在房间的状态
+     */
+    @GetMapping("/{roomId}/my-status")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> getUserRoomStatus(@AuthenticationPrincipal UserPrincipal currentUser,
+                                            @PathVariable Long roomId) {
+        try {
+            logger.info("获取用户房间状态请求, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+
+            // 获取房间
+            Room room = roomService.getById(roomId);
+            if (room == null) {
+                logger.error("房间不存在, 房间ID: {}", roomId);
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "房间不存在"));
+            }
+
+            // 检查用户是否在该房间
+            RoomPlayer roomPlayer = roomService.getRoomPlayer(roomId, currentUser.getId());
+            if (roomPlayer == null) {
+                logger.error("用户不在房间中, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "您不在该房间中"));
+            }
+
+            // 构建用户状态信息
+            Map<String, Object> userStatus = new HashMap<>();
+            userStatus.put("roomId", roomId);
+            userStatus.put("userId", currentUser.getId());
+            userStatus.put("username", currentUser.getUsername());
+            userStatus.put("seatNumber", roomPlayer.getSeatNumber());
+            userStatus.put("status", roomPlayer.getStatus());
+            userStatus.put("currentChips", roomPlayer.getCurrentChips());
+            userStatus.put("isSeated", roomPlayer.getSeatNumber() != null);
+            
+            // 获取当前游戏信息
+            GameHistory currentGame = gameService.getCurrentGame(roomId);
+            if (currentGame != null) {
+                userStatus.put("gameId", currentGame.getId());
+                userStatus.put("gameStatus", currentGame.getStatus());
+                
+                // 如果用户在游戏中，获取手牌信息
+                if (roomPlayer.getSeatNumber() != null) {
+                    String holeCards = gameService.getPlayerCards(currentGame.getId(), currentUser.getId());
+                    userStatus.put("holeCards", holeCards);
+                }
+            }
+
+            logger.info("获取用户房间状态成功, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+            return ResponseEntity.ok(userStatus);
+        } catch (Exception e) {
+            logger.error("获取用户房间状态失败, 房间ID: {}, 用户ID: {}, 错误: {}", roomId, currentUser.getId(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "获取用户房间状态失败: " + e.getMessage()));
+        }
+    }
 }
