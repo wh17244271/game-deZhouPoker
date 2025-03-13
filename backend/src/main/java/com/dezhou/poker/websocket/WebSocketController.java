@@ -50,6 +50,14 @@ public class WebSocketController {
                                      @Payload WebSocketMessage message,
                                      SimpMessageHeaderAccessor headerAccessor,
                                      Authentication authentication) {
+        // 添加空检查，如果认证为空，则返回错误消息
+        if (authentication == null || authentication.getPrincipal() == null) {
+            logger.error("用户未认证，无法加入房间");
+            message.setType(WebSocketMessage.MessageType.ERROR);
+            message.setContent("用户未认证，无法加入房间");
+            return message;
+        }
+        
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         
         // 保存用户信息到WebSocket会话
@@ -63,8 +71,7 @@ public class WebSocketController {
         message.setSenderName(userPrincipal.getUsername());
         message.setContent(userPrincipal.getUsername() + " 加入了房间");
         
-        logger.info("用户 {} 加入房间 {}", userPrincipal.getUsername(), roomId);
-        
+        logger.info("用户 {} 加入了房间 {}", userPrincipal.getUsername(), roomId);
         return message;
     }
 

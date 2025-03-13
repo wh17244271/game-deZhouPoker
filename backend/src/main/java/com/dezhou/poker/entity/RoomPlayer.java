@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 @TableName("room_players")
 @Entity
 @Table(name = "room_players")
+@IdClass(RoomPlayerId.class)
 public class RoomPlayer implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -40,23 +41,18 @@ public class RoomPlayer implements Serializable {
     }
 
     /**
-     * 复合主键
+     * 房间ID - 主键部分
      */
-    @EmbeddedId
-    @TableField(exist = false)
-    private RoomPlayerId id;
-
-    /**
-     * 房间ID
-     */
-    @Column(name = "room_id", insertable = false, updatable = false)
-    @TableField("room_id")
+    @Id
+    @Column(name = "room_id")
+    @TableId(value = "room_id", type = IdType.INPUT)
     private Long roomId;
 
     /**
-     * 用户ID
+     * 用户ID - 主键部分
      */
-    @Column(name = "user_id", insertable = false, updatable = false)
+    @Id
+    @Column(name = "user_id")
     @TableField("user_id")
     private Long userId;
 
@@ -109,13 +105,12 @@ public class RoomPlayer implements Serializable {
     @TableField(exist = false)
     private LocalDateTime joinedAt;
 
- 
-
     /**
-     * 逻辑删除标志 (兼容旧代码)
+     * 逻辑删除标志
      */
-    @Transient
-    @TableField(exist = false)
+    @Column(name = "deleted")
+    @TableLogic
+    @TableField("deleted")
     private Integer deleted;
 
     /**
@@ -152,23 +147,5 @@ public class RoomPlayer implements Serializable {
      */
     public LocalDateTime getJoinedAt() {
         return this.joinedAt;
-    }
-    
-  
-    
- 
-    /**
-     * 设置逻辑删除标志 (兼容旧代码)
-     */
-    public RoomPlayer setDeleted(Integer deleted) {
-        this.deleted = deleted;
-        return this;
-    }
-    
-    /**
-     * 获取逻辑删除标志 (兼容旧代码)
-     */
-    public Integer getDeleted() {
-        return this.deleted;
     }
 } 

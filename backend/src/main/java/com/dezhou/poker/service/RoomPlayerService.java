@@ -87,4 +87,11 @@ public interface RoomPlayerService extends IService<RoomPlayer> {
      * @return 房间玩家信息
      */
     RoomPlayer getRoomPlayer(Long roomId, Long userId);
+    
+    /**
+     * 更新房间玩家信息
+     * @param roomPlayer 房间玩家对象
+     * @return 是否更新成功
+     */
+    boolean updateRoomPlayer(RoomPlayer roomPlayer);
 } 

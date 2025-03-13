@@ -247,7 +247,17 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         
         // 更新用户座位
         roomPlayer.setSeatNumber(seatNumber);
-        this.updateById(roomPlayer);
+        
+        // 使用条件更新而不是updateById
+        boolean updated = update(new LambdaUpdateWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomId)
+                .eq(RoomPlayer::getUserId, userId)
+                .set(RoomPlayer::getSeatNumber, seatNumber)
+                .set(RoomPlayer::getStatus, "SEATED"));
+                
+        if (!updated) {
+            throw new BusinessException("更新座位信息失败");
+        }
         
         return roomPlayer;
     }
@@ -257,5 +267,22 @@ public class RoomPlayerServiceImpl extends ServiceImpl<RoomPlayerMapper, RoomPla
         return getOne(new LambdaQueryWrapper<RoomPlayer>()
                 .eq(RoomPlayer::getRoomId, roomId)
                 .eq(RoomPlayer::getUserId, userId));
+    }
+    
+    @Override
+    public boolean updateRoomPlayer(RoomPlayer roomPlayer) {
+        if (roomPlayer == null) {
+            return false;
+        }
+        
+        // 使用条件更新而不是updateById
+        return update(new LambdaUpdateWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomPlayer.getRoomId())
+                .eq(RoomPlayer::getUserId, roomPlayer.getUserId())
+                .set(roomPlayer.getSeatNumber() != null, RoomPlayer::getSeatNumber, roomPlayer.getSeatNumber())
+                .set(roomPlayer.getStatus() != null, RoomPlayer::getStatus, roomPlayer.getStatus())
+                .set(roomPlayer.getCurrentChips() != null, RoomPlayer::getCurrentChips, roomPlayer.getCurrentChips())
+                .set(roomPlayer.getLastAction() != null, RoomPlayer::getLastAction, roomPlayer.getLastAction())
+                .set(roomPlayer.getLastBet() != null, RoomPlayer::getLastBet, roomPlayer.getLastBet()));
     }
 } 

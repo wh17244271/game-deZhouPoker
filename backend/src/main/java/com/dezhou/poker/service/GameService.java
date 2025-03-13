@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.HashMap;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 游戏服务类
@@ -24,6 +26,8 @@ import java.util.Arrays;
 @Service
 @Transactional
 public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
+
+    private static final Logger log = LoggerFactory.getLogger(GameService.class);
 
     @Autowired
     private PlayerGameHistoryMapper playerGameHistoryMapper;
@@ -735,18 +739,44 @@ public class GameService extends ServiceImpl<GameHistoryMapper, GameHistory> {
                 updateById(game);
             } else if ("RIVER".equals(currentRoundStr)) {
                 // 河牌阶段完成，进入摊牌阶段并结束游戏
-                game.setCurrentRound(GameAction.GameRound.SHOWDOWN.ordinal());
-                game.setStatusEnum(GameHistory.GameStatus.FINISHED);
-                game.setEndTime(LocalDateTime.now());
-                updateById(game);
-                
-                // 这里应该有摊牌和确定获胜者的逻辑
-                // 简化处理：计算奖池并按比例分配给未弃牌的玩家
-                BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
-                BigDecimal share = potSize.divide(new BigDecimal(activePlayers.size()), 2, BigDecimal.ROUND_DOWN);
-                
-                for (PlayerGameHistory player : activePlayers) {
-                    updateWinner(gameId, player.getUserId(), share, "Showdown");
+                try {
+                    game.setCurrentRound(GameAction.GameRound.SHOWDOWN.ordinal());
+                    game.setStatusEnum(GameHistory.GameStatus.FINISHED);
+                    game.setEndTime(LocalDateTime.now());
+                    updateById(game);
+                    
+                    // 这里应该有摊牌和确定获胜者的逻辑
+                    // 简化处理：计算奖池并按比例分配给未弃牌的玩家
+                    BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
+                    BigDecimal share = potSize.divide(new BigDecimal(activePlayers.size()), 2, BigDecimal.ROUND_DOWN);
+                    
+                    for (PlayerGameHistory player : activePlayers) {
+                        updateWinner(gameId, player.getUserId(), share, "Showdown");
+                    }
+                } catch (Exception e) {
+                    // 记录错误并尝试使用备用方法
+                    log.error("设置游戏轮次为SHOWDOWN时出错: {}", e.getMessage(), e);
+                    
+                    // 尝试使用字符串名称设置
+                    try {
+                        // 直接使用数字4（SHOWDOWN的序号）
+                        game.setCurrentRound(4);
+                        game.setStatusEnum(GameHistory.GameStatus.FINISHED);
+                        game.setEndTime(LocalDateTime.now());
+                        updateById(game);
+                        
+                        // 这里应该有摊牌和确定获胜者的逻辑
+                        // 简化处理：计算奖池并按比例分配给未弃牌的玩家
+                        BigDecimal potSize = gameActionMapper.calculatePotSize(gameId);
+                        BigDecimal share = potSize.divide(new BigDecimal(activePlayers.size()), 2, BigDecimal.ROUND_DOWN);
+                        
+                        for (PlayerGameHistory player : activePlayers) {
+                            updateWinner(gameId, player.getUserId(), share, "Showdown");
+                        }
+                    } catch (Exception ex) {
+                        log.error("使用备用方法设置游戏轮次为SHOWDOWN时出错: {}", ex.getMessage(), ex);
+                        throw ex;
+                    }
                 }
                 
                 return true;

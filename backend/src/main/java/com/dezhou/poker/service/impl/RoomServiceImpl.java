@@ -110,6 +110,18 @@ public class RoomServiceImpl extends ServiceImpl<RoomMapper, Room> implements Ro
 
     @Override
     public boolean updateRoomPlayer(RoomPlayer roomPlayer) {
-        return roomPlayerMapper.updateById(roomPlayer) > 0;
+        if (roomPlayer == null || roomPlayer.getRoomId() == null || roomPlayer.getUserId() == null) {
+            return false;
+        }
+        
+        // 使用条件更新代替 updateById
+        int updated = roomPlayerMapper.update(
+            roomPlayer,
+            new LambdaQueryWrapper<RoomPlayer>()
+                .eq(RoomPlayer::getRoomId, roomPlayer.getRoomId())
+                .eq(RoomPlayer::getUserId, roomPlayer.getUserId())
+        );
+        
+        return updated > 0;
     }
 } 

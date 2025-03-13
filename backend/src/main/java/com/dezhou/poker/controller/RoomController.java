@@ -376,20 +376,30 @@ public class RoomController {
                                     @PathVariable Long roomId,
                                     @RequestBody(required = false) Map<String, Integer> requestBody) {
         try {
+            logger.info("收到玩家入座请求, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
+            
             final Integer requestedSeat = requestBody != null ? requestBody.get("seatNumber") : null;
             Integer seatNumber = requestedSeat;
-            logger.info("玩家入座请求, 房间ID: {}, 用户ID: {}, 座位号: {}", roomId, currentUser.getId(), seatNumber);
+            logger.info("玩家入座请求详情, 房间ID: {}, 用户ID: {}, 座位号: {}", roomId, currentUser.getId(), seatNumber);
 
             // 获取房间
             Room room = roomService.getById(roomId);
             if (room == null) {
+                logger.error("房间不存在, 房间ID: {}", roomId);
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "房间不存在"));
             }
 
             // 检查用户是否已在该房间
             RoomPlayer existingPlayer = roomService.getRoomPlayer(roomId, currentUser.getId());
             if (existingPlayer == null) {
+                logger.error("用户不在房间中, 房间ID: {}, 用户ID: {}", roomId, currentUser.getId());
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "您不在该房间中，请先加入房间"));
+            }
+
+            // 如果用户已经有座位，直接返回成功
+            if (existingPlayer.getSeatNumber() != null) {
+                logger.info("用户已经有座位, 房间ID: {}, 用户ID: {}, 座位号: {}", roomId, currentUser.getId(), existingPlayer.getSeatNumber());
+                return ResponseEntity.ok(new ApiResponse(true, "您已经入座", existingPlayer.getSeatNumber()));
             }
 
             // 检查座位是否已被占用（如果指定了座位号）
@@ -402,6 +412,7 @@ public class RoomController {
                     .orElse(null);
                     
                 if (seatOccupier != null && !seatOccupier.getUserId().equals(currentUser.getId())) {
+                    logger.error("座位已被占用, 房间ID: {}, 座位号: {}, 占用者ID: {}", roomId, seatNumber, seatOccupier.getUserId());
                     return ResponseEntity.badRequest().body(new ApiResponse(false, "座位已被占用"));
                 }
             }
@@ -426,20 +437,28 @@ public class RoomController {
                 }
 
                 if (seatNumber == null) {
+                    logger.error("没有可用座位, 房间ID: {}", roomId);
                     return ResponseEntity.badRequest().body(new ApiResponse(false, "没有可用座位"));
                 }
             }
 
             // 更新用户座位
             existingPlayer.setSeatNumber(seatNumber);
-            roomService.updateRoomPlayer(existingPlayer);
+            boolean updated = roomService.updateRoomPlayer(existingPlayer);
+            
+            if (!updated) {
+                logger.error("更新用户座位失败, 房间ID: {}, 用户ID: {}, 座位号: {}", roomId, currentUser.getId(), seatNumber);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new ApiResponse(false, "入座失败: 更新用户座位失败"));
+            }
             
             // 推送房间更新消息
             messagingTemplate.convertAndSend("/topic/room/" + roomId, Collections.singletonMap("type", "ROOM_UPDATE"));
 
+            logger.info("用户入座成功, 房间ID: {}, 用户ID: {}, 座位号: {}", roomId, currentUser.getId(), seatNumber);
             return ResponseEntity.ok(new ApiResponse(true, "入座成功", seatNumber));
         } catch (Exception e) {
-            logger.error("玩家入座失败", e);
+            logger.error("玩家入座失败, 房间ID: {}, 用户ID: {}, 错误: {}", roomId, currentUser.getId(), e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "入座失败: " + e.getMessage()));
         }

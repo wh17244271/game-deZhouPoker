@@ -24,9 +24,12 @@ import java.util.stream.Collectors;
 /**
  * 座位控制器
  * 处理玩家入座、离开座位等操作
+ * 
+ * 注：此控制器与 RoomController 中的 seatPlayer 方法存在冲突
+ * 暂时禁用此控制器，使用 RoomController 中的相应功能
  */
-@RestController
-@RequestMapping("/rooms")
+// @RestController  // 注释掉以避免冲突
+// @RequestMapping("/rooms")
 public class SeatController {
 
     private static final Logger logger = LoggerFactory.getLogger(SeatController.class);
@@ -45,8 +48,8 @@ public class SeatController {
      * @param requestBody 请求体，可包含座位号
      * @return 入座结果
      */
-    @PostMapping("/{roomId}/seat")
-    @PreAuthorize("isAuthenticated()")
+    // @PostMapping("/{roomId}/seat")  // 注释掉以避免冲突
+    // @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> seatPlayer(
             @AuthenticationPrincipal UserPrincipal currentUser,
             @PathVariable Long roomId,
